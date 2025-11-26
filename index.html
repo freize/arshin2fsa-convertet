@@ -352,6 +352,11 @@
         let errorCount = 0;
         let authorSnilsMap = {}; // ФИО -> СНИЛС
         let mpiMonthsMap = {};  // Номер ГРСИ -> МПИ (в месяцах)
+        
+        // НОВЫЕ ГЛОБАЛЬНЫЕ ДЛЯ АВТОПЕРЕЗАПУСКА
+        let lastCsvContent = null;
+        let lastDelimiter = null;
+        let lastFileName = null;
 
 
         // --- ЭЛЕМЕНТЫ DOM ---
@@ -410,7 +415,7 @@
             downloadButton.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
             recordCountElement.classList.add('hidden');
             missingAuthorsContainer.classList.add('hidden'); 
-            missingMpiContainer.classList.add('hidden'); // Скрываем предупреждение о недостающих МПИ
+            missingMpiContainer.classList.add('hidden'); 
         }
 
         function stopProcessing() {
@@ -482,6 +487,7 @@
         }
 
         function detectDelimiter(headerLine) {
+            if (!headerLine) return ',';
             const commaCount = (headerLine.match(/,/g) || []).length;
             const semicolonCount = (headerLine.match(/;/g) || []).length;
 
@@ -1054,14 +1060,19 @@
             if (newMappingsCount > 0) {
                 saveAndRenderMappings();
                 logMessage(`Успешно добавлено/обновлено ${newMappingsCount} сопоставлений СНИЛС.`);
-                updateStatus('Сопоставления СНИЛС обновлены. Перезагрузите CSV-файл для повторной конвертации.');
             } else {
                 logMessage('Нет новых данных СНИЛС для сохранения.');
             }
             
-            // Если все поля были успешно сохранены, скрыть блок.
+            // Если все поля были успешно сохранены, скрываем блок И перезапускаем процесс.
             if (errorFound === false) {
                  missingAuthorsContainer.classList.add('hidden');
+                 if (lastCsvContent && lastDelimiter) {
+                     logMessage('Все недостающие СНИЛС сохранены. Автоматический перезапуск конвертации...');
+                     runConversionProcess(lastCsvContent, lastDelimiter, lastFileName);
+                 } else {
+                     updateStatus('Сопоставления СНИЛС обновлены. Загрузите CSV-файл для конвертации.');
+                 }
             }
         }
         
@@ -1104,18 +1115,80 @@
             if (newMappingsCount > 0) {
                 saveAndRenderMpiMappings();
                 logMessage(`Успешно добавлено/обновлено ${newMappingsCount} сопоставлений МПИ.`);
-                updateStatus('Сопоставления МПИ обновлены. Перезагрузите CSV-файл для повторной конвертации.');
             } else {
                 logMessage('Нет новых данных МПИ для сохранения.');
             }
             
-            // Если все поля были успешно сохранены, скрыть блок.
+            // Если все поля были успешно сохранены, скрываем блок И перезапускаем процесс.
             if (errorFound === false) {
                  missingMpiContainer.classList.add('hidden');
+                 if (lastCsvContent && lastDelimiter) {
+                     logMessage('Все недостающие МПИ сохранены. Автоматический перезапуск конвертации...');
+                     runConversionProcess(lastCsvContent, lastDelimiter, lastFileName);
+                 } else {
+                     updateStatus('Сопоставления МПИ обновлены. Загрузите CSV-файл для конвертации.');
+                 }
             }
         }
 
         // --- ОСНОВНАЯ ЛОГИКА КОНВЕРТАЦИИ ---
+        
+        /**
+         * Runs the full conversion process with pre-loaded content.
+         */
+        async function runConversionProcess(csvContent, usedDelimiter, filenameForDownload) {
+            startProcessing(); // Reset UI state
+            const startTime = performance.now();
+            let finalXmlContent = null;
+            let success = false;
+            let errorMessage = '';
+
+            try {
+                // --- 1. Сбор уникальных данных ---
+                const uniqueAuthors = getUniqueValuesFromCsv(csvContent, usedDelimiter, COL_INDEX.Author);
+
+                // --- 2. Проверка недостающих данных (повторная) ---
+                const missingSnils = checkAndDisplayMissingAuthors(uniqueAuthors);
+                const missingMpi = checkAndDisplayMissingMpi(csvContent, usedDelimiter);
+                
+                if (missingSnils || missingMpi) {
+                    // Если после рестарта все еще есть недостающие данные (например, была сохранена только часть)
+                    errorMessage = "Требуется ввод недостающих данных (СНИЛС или МПИ). Исправьте выделенные блоки.";
+                    logError(errorMessage);
+                    return; 
+                }
+                
+                // --- 3. Конвертация ---
+                finalXmlContent = convertToXML(csvContent, usedDelimiter);
+
+                if (finalXmlContent) {
+                    success = true;
+                } else {
+                    errorMessage = "Ошибка: Не найдено валидных записей для конвертации. Проверьте лог отладки.";
+                    logError(errorMessage);
+                }
+
+            } catch(e) {
+                 errorMessage = `Критическая ошибка обработки данных: ${e.message}`;
+                 logError(`КРИТИЧЕСКАЯ ОШИБКА В КОНВЕРТАЦИИ: ${e.message}`);
+            }
+
+            // --- 4. Завершение ---
+            const elapsedTime = performance.now() - startTime;
+            const delay = Math.max(0, MIN_PROCESSING_TIME - elapsedTime);
+
+            setTimeout(() => {
+                stopProcessing();
+                
+                if (success) {
+                    const recordCount = (finalXmlContent.match(/<VerificationMeasuringInstrument>/g) || []).length; 
+                    updateSuccess(recordCount);
+                    downloadButton.onclick = () => downloadXML(finalXmlContent, filenameForDownload);
+                } else {
+                    updateStatus(errorMessage, true);
+                }
+            }, delay);
+        }
 
         function convertToXML(csvContent, usedDelimiter) {
             logMessage('Начало процесса конвертации CSV в XML.');
@@ -1174,14 +1247,14 @@
                         continue;
                     }
                     
-                    // --- 1. Проверка СНИЛС ---
+                    // --- 1. Проверка СНИЛС (должна пройти, если runConversionProcess была вызвана) ---
                     const snils = authorSnilsMap[authorFull];
                     if (!snils) {
                         logError(`Строка ${lineNumber} (${documentNum}): Отсутствует сопоставление СНИЛС для автора: "${authorFull}". (Запись пропущена)`);
                         continue;
                     }
                     
-                    // --- 2. Проверка МПИ (по ключу ГРСИ) ---
+                    // --- 2. Проверка МПИ (по ключу ГРСИ) (должна пройти, если runConversionProcess была вызвана) ---
                     const mpiMonths = mpiMonthsMap[grsiNumber];
                     if (!mpiMonths) {
                         logError(`Строка ${lineNumber} (${documentNum}): Отсутствует сопоставление МПИ для ГРСИ №: "${grsiNumber}". (Запись пропущена)`);
@@ -1288,19 +1361,14 @@
 
             fileNameDisplay.textContent = `Выбран файл: ${file.name}`;
             startProcessing();
-            const startTime = performance.now();
 
             let csvContent = null;
-            let finalXmlContent = null;
-            let filename = '';
-            let success = false;
-            let errorMessage = '';
+            let usedDelimiter = null;
 
             try {
                 // --- 1. Чтение файла ---
                 logMessage('Чтение файла с автоопределением кодировки...');
                 let content = await readFileWithEncoding(file, 'UTF-8');
-                let usedDelimiter = null;
                 
                 if (hasEncodingIssues(content)) {
                     content = await readFileWithEncoding(file, 'windows-1251');
@@ -1310,51 +1378,22 @@
                 }
                 csvContent = content;
                 usedDelimiter = detectDelimiter(csvContent.split('\n')[HEADER_SKIP_LINES]);
-                
-                // --- 2. Сбор уникальных данных ---
-                const uniqueAuthors = getUniqueValuesFromCsv(csvContent, usedDelimiter, COL_INDEX.Author);
 
-                // --- 3. Проверка недостающих данных ---
-                const missingSnils = checkAndDisplayMissingAuthors(uniqueAuthors);
-                const missingMpi = checkAndDisplayMissingMpi(csvContent, usedDelimiter); // Использует COL_INDEX.GRSI внутри
-                
-                if (missingSnils || missingMpi) {
-                    errorMessage = "Требуется ввод недостающих данных (СНИЛС или МПИ). Исправьте выделенные блоки.";
-                    logError(errorMessage);
-                    return; // Прерываем конвертацию
-                }
-                
-                // --- 4. Конвертация ---
-                finalXmlContent = convertToXML(csvContent, usedDelimiter);
+                // --- Сохраняем для автоперезапуска и для проверки отсутствующих данных ---
+                lastCsvContent = csvContent;
+                lastDelimiter = usedDelimiter;
+                lastFileName = generateFileName(); // Генерируем имя файла заранее для сохранения консистентности
 
-                if (finalXmlContent) {
-                    filename = generateFileName();
-                    success = true;
-                } else {
-                    errorMessage = "Ошибка: Не найдено валидных записей для конвертации. Проверьте лог отладки.";
-                    logError(errorMessage);
-                }
+                
+                // --- 2. Запуск процесса (который теперь включает проверку отсутствующих данных) ---
+                await runConversionProcess(lastCsvContent, lastDelimiter, lastFileName);
 
             } catch(e) {
-                 errorMessage = `Критическая ошибка чтения или обработки файла: ${e.message}`;
-                 logError(`КРИТИЧЕСКАЯ ОШИБКА: ${e.message}`);
+                 const errorMessage = `Критическая ошибка чтения файла: ${e.message}`;
+                 logError(errorMessage);
+                 updateStatus(errorMessage, true);
+                 stopProcessing();
             }
-
-            // --- 5. Завершение ---
-            const elapsedTime = performance.now() - startTime;
-            const delay = Math.max(0, MIN_PROCESSING_TIME - elapsedTime);
-
-            setTimeout(() => {
-                stopProcessing();
-                
-                if (success) {
-                    const recordCount = (finalXmlContent.match(/<VerificationMeasuringInstrument>/g) || []).length; 
-                    updateSuccess(recordCount);
-                    downloadButton.onclick = () => downloadXML(finalXmlContent, filename);
-                } else {
-                    updateStatus(errorMessage, true);
-                }
-            }, delay);
         }
 
         // Drop Area Events
