@@ -205,7 +205,6 @@
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         // --- КОНФИГУРАЦИЯ ---
-        // ИСПРАВЛЕНО: Установлено 3 для пропуска двух строк метаданных + строки заголовков
         const HEADER_SKIP_LINES = 3; 
         const MIN_PROCESSING_TIME = 1500; 
 
@@ -371,6 +370,7 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
+            window.firebaseImports.app = app; // Store app for later use if needed
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -516,7 +516,7 @@
 
             const exportPayload = {
                 timestamp: new Date().toISOString(),
-                format: "FGIS_SNILS_MAPPINGS_V1",
+                format: "FGIS_SNILS_MAPPINGS_V1", // Используем латиницу для совместимости
                 description: "Exported SNILS mappings for FGIS FSA converter.",
                 mappings: currentMappingsData.map(d => ({ fullName: d.fullName, snils: d.snils }))
             };
@@ -537,21 +537,28 @@
         }
 
         async function handleImportMappings(file) {
-            const { getDocs, query, writeBatch, getFirestore } = window.firebaseImports;
+            const { getDocs, query, writeBatch, doc } = window.firebaseImports;
+            
             if (!isAuthReady || !db) {
-                logError('Невозможно импортировать: Firestore не инициализирован.');
+                logError('Невозможно импортировать: Firestore не инициализирован. Дождитесь статуса "Аутентифицирован".');
+                updateStatus("Невозможно импортировать. Дождитесь загрузки сопоставлений.", true); // Четкая визуальная обратная связь
                 return;
             }
             
             logMessage(`Чтение файла импорта: ${file.name}...`);
 
             const reader = new FileReader();
+            
+            // ОБРАБОТЧИК УСПЕШНОГО ЧТЕНИЯ
             reader.onload = async (e) => {
                 try {
                     const importedData = JSON.parse(e.target.result);
 
-                    if (importedData.format !== "FGIS_SNILS_MAPPINGS_V1" || !Array.isArray(importedData.mappings)) {
-                        throw new Error('Неверный формат файла сопоставлений.');
+                    // ИСПРАВЛЕНО: Добавлена проверка на кириллическую версию формата в файле импорта
+                    const allowedFormats = ["FGIS_SNILS_MAPPINGS_V1", "FGIS_СНИЛС_MAPPINGS_V1"];
+                    
+                    if (!allowedFormats.includes(importedData.format) || !Array.isArray(importedData.mappings)) {
+                        throw new Error(`Неверный формат файла сопоставлений. Ожидается один из: ${allowedFormats.join(', ')}.`);
                     }
 
                     const newMappings = importedData.mappings;
@@ -566,15 +573,14 @@
                     
                     // Очистка всех существующих сопоставлений перед импортом
                     const existingDocs = await getDocs(query(mappingsCol));
-                    existingDocs.forEach(doc => {
-                        batch.delete(doc.ref);
+                    existingDocs.forEach(d => {
+                        batch.delete(d.ref);
                     });
 
                     // Добавление новых сопоставлений
                     newMappings.forEach(mapping => {
                         if (mapping.fullName && mapping.snils && /^\d{11}$/.test(mapping.snils)) {
-                            // Firestore auto-generates doc ID for addDoc, but batch requires a doc reference
-                            const newDocRef = mappingsCol.doc(); 
+                            const newDocRef = doc(mappingsCol);
                             batch.set(newDocRef, { 
                                 fullName: mapping.fullName, 
                                 snils: mapping.snils 
@@ -587,11 +593,21 @@
 
                     await batch.commit();
                     logMessage(`Импорт завершен. Очищено ${existingDocs.size} старых записей и добавлено ${importedCount} новых сопоставлений.`);
-                    // onSnapshot автоматически обновит UI и snilsMap
+                    updateStatus(`Импорт завершен. Добавлено ${importedCount} сопоставлений.`);
+
                 } catch (error) {
-                    logError(`Ошибка при импорте сопоставлений: ${error.message}`);
+                    // Явная обработка ошибки парсинга JSON
+                    logError(`Ошибка при парсинге JSON: ${error.message}. Убедитесь, что файл не поврежден.`);
+                    updateStatus(`Ошибка при импорте: Некорректный JSON. Проверьте лог.`, true); 
                 }
             };
+            
+            // ОБРАБОТЧИК ОШИБКИ ЧТЕНИЯ ФАЙЛА
+            reader.onerror = (e) => {
+                logError(`Ошибка чтения файла: ${e.target.error.name}.`);
+                updateStatus(`Ошибка чтения файла: ${e.target.error.name}`, true);
+            };
+
             reader.readAsText(file);
         }
 
