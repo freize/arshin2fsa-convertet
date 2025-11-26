@@ -7,7 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles */
+        /* Custom styles: ВОЗВРАТ ПРЕДЫДУЩЕГО ФОНА */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f4f8; /* Light blue-gray base */
@@ -18,17 +18,47 @@
             background-size: 15px 15px; /* Size of the grid cells */
             background-attachment: fixed;
         }
+        
+        /* Главная карточка */
+        .main-card {
+            background-color: #ffffff;
+        }
+
         .drag-area {
-            border: 2px dashed #cbd5e1; /* slate-300 */
+            border: 3px dashed #94a3b8; /* slate-400 */
             transition: all 0.3s ease;
         }
         .drag-area.active {
-            border-color: #3b82f6; /* blue-500 */
-            background-color: #eff6ff; /* blue-50 */
+            border-color: #0ea5e9; /* sky-500 */
+            background-color: #f0f9ff; /* sky-50 */
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2); /* ring effect for focus */
         }
-        /* Custom style for instruction summary icon */
+        
         details[open] summary svg {
             transform: rotate(180deg);
+        }
+        
+        /* Анимация полос прогресса */
+        @keyframes progress-stripes {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .animate-progress-stripes {
+            width: 200%; 
+            animation: progress-stripes 2s linear infinite;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.15) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.15) 50%,
+                rgba(255, 255, 255, 0.15) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 1rem 1rem;
+            will-change: transform;
         }
     </style>
     <script>
@@ -37,39 +67,44 @@
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'accent-sky': '#0ea5e9', // sky-500 for primary
+                        'accent-emerald': '#10b981', // emerald-500 for success
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-12">
 
-    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
-        <header class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                Конвертер данных для ФГИС ФСА
+    <!-- Главная карточка - чистая, белая, с акцентной рамкой -->
+    <div class="max-w-4xl mx-auto main-card p-6 md:p-10 rounded-xl shadow-xl border-t-4 border-accent-sky">
+        <header class="mb-8 border-b border-gray-200 pb-4">
+            <h1 class="text-3xl font-bold text-gray-800 mb-1">
+                <span class="text-accent-sky">|</span> Конвертер данных <span class="text-accent-sky">ФГИС</span>
             </h1>
-            <p class="text-gray-500">
-                Данный конвертер предназначен для преобразования формата файла выгрузки из ФГИС "АРШИН" в формат для загрузки в ФГИС ФСА.
+            <p class="text-gray-500 text-base">
+                Преобразование выгрузки "АРШИН" в формат для загрузки в ФГИС ФСА.
             </p>
         </header>
 
-        <!-- Instruction Guide Block -->
-        <details class="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <summary class="flex justify-between items-center cursor-pointer font-semibold text-yellow-800 focus:outline-none">
+        <!-- Instruction Guide Block - Чистый, синий акцент (sky) -->
+        <details class="mb-8 p-4 bg-sky-50 border border-sky-200 rounded-lg">
+            <summary class="flex justify-between items-center cursor-pointer font-semibold text-sky-800 focus:outline-none">
                 <span>
-                    <svg class="w-5 h-5 inline-block mr-2 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <svg class="w-5 h-5 inline-block mr-2 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Инструкция по подготовке файла (ВАЖНО)
                 </span>
-                <svg class="w-4 h-4 text-yellow-600 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                <svg class="w-4 h-4 text-sky-600 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
             </summary>
             
             <div class="mt-3 text-sm text-gray-700 space-y-3">
-                <p class="font-bold text-yellow-900">1. Проверка структуры файла:</p>
-                <p>Ваш файл должен быть экспортирован из реестра таким образом, чтобы заголовок таблицы начинался с <span class="font-mono bg-yellow-100 p-1 rounded">3-й строки</span> (первые две строки – это метаданные, которые конвертер автоматически пропустит).</p>
+                <p class="font-bold text-sky-900">1. Проверка структуры файла:</p>
+                <p>Ваш файл должен быть экспортирован из реестра таким образом, чтобы заголовок таблицы начинался с <span class="font-mono bg-sky-100 p-1 rounded">3-й строки</span> (первые две строки – это метаданные, которые конвертер автоматически пропустит).</p>
                 
-                <p class="font-bold text-yellow-900">2. Обязательные колонки (Индекс = номер колонки, начиная с 0):</p>
+                <p class="font-bold text-sky-900">2. Обязательные колонки (Индекс = номер колонки, начиная с 0):</p>
                 <ul class="list-disc list-inside ml-4 space-y-1 bg-white p-3 rounded border">
                     <li><span class="font-mono">Author</span> (Индекс **1**): ФИО автора записи.</li>
                     <li><span class="font-mono">Type</span> (Индекс **3**): Наименование типа СИ.</li>
@@ -78,51 +113,85 @@
                     <li><span class="font-mono">Document</span> (Индекс **10**): Номер документа (протокола) поверки.</li>
                 </ul>
                 
-                <p class="font-bold text-yellow-900">3. Сохранение в формат CSV:</p>
+                <p class="font-bold text-sky-900">3. Сохранение в формат CSV:</p>
                 <p>В Excel выберите "Сохранить как" и выберите тип файла <span class="font-medium">CSV (разделители-запятые)</span> или <span class="font-medium">CSV (разделители-точки с запятой)</span>. Конвертер автоматически определит разделитель.</p>
                 
-                <p class="text-xs italic mt-4 text-yellow-700">
+                <p class="text-xs italic mt-4 text-sky-700">
                     <span class="font-semibold">Примечание по датам:</span> Даты в CSV (Индекс 5) должны быть в одном из форматов: ДД.ММ.ГГГГ, ДД-ММ-ГГГГ или ГГГГ-ММ-ДД.
                 </p>
             </div>
         </details>
         
-        <!-- File Input Area -->
-        <div id="drop-area" class="drag-area p-8 rounded-lg text-center cursor-pointer transition-all hover:shadow-lg">
-            <input type="file" id="fileInput" accept=".csv" class="hidden">
-            <svg class="mx-auto h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 014 4v2a4 4 0 01-4 4H7z" />
-            </svg>
-            <p class="mt-2 text-sm text-gray-600">
-                Перетащите CSV-файл сюда или <span class="text-blue-600 font-medium">нажмите для выбора</span>
-            </p>
-            <p id="fileNameDisplay" class="text-xs text-gray-400 mt-1"></p>
-        </div>
-        
-        <!-- Status and Result Area -->
-        <div class="mt-8 p-4 bg-gray-50 rounded-lg shadow-inner">
-            <div id="statusMessage" class="text-gray-600 font-medium mb-2">
-                Ожидание загрузки файла...
-            </div>
+        <!-- Input and Status Section - Разделены на два блока -->
+        <div class="grid md:grid-cols-2 gap-6">
             
-            <button id="downloadButton"
-                    class="w-full bg-green-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-600 transition-colors duration-200 opacity-50 cursor-not-allowed"
-                    disabled>
-                Скачать XML-файл
-            </button>
-            <p id="recordCount" class="text-sm text-gray-500 mt-2 hidden"></p>
+            <!-- БЛОК 1: Загрузка файла (Drag-n-Drop) -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-3 border-b pb-1">
+                    Загрузка исходного CSV
+                </h2>
+                <div id="drop-area" class="drag-area p-8 rounded-lg text-center cursor-pointer transition-all hover:ring-2 hover:ring-offset-2 hover:ring-sky-300">
+                    <input type="file" id="fileInput" accept=".csv" class="hidden">
+                    <svg class="mx-auto h-12 w-12 text-accent-sky" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 014 4v2a4 4 0 01-4 4H7z" />
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-600">
+                        Перетащите CSV-файл сюда или <span class="text-accent-sky font-semibold">нажмите для выбора</span>
+                    </p>
+                    <p id="fileNameDisplay" class="text-xs text-gray-400 mt-1"></p>
+                </div>
+            </div>
+
+            <!-- БЛОК 2: Статус и Скачивание -->
+            <div class="p-4 bg-gray-50 rounded-lg shadow-inner border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3 border-b pb-1">
+                    Статус и результат
+                </h2>
+                
+                <div id="statusMessage" class="text-gray-600 text-lg font-semibold mb-4">
+                    Ожидание загрузки файла...
+                </div>
+                
+                <!-- Processing Animation -->
+                <div id="processingIndicator" class="mt-4 hidden">
+                    <div class="h-2.5 bg-sky-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-accent-sky rounded-full animate-progress-stripes"></div>
+                    </div>
+                    <p class="text-xs text-accent-sky mt-1 font-medium animate-pulse">Обработка данных...</p>
+                </div>
+
+                <!-- Кнопка с accent-emerald -->
+                <button id="downloadButton"
+                        class="w-full mt-4 bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-emerald-600 transition-colors duration-200 opacity-50 cursor-not-allowed disabled:shadow-none"
+                        disabled>
+                    Скачать XML-файл
+                </button>
+                <p id="recordCount" class="text-sm text-gray-500 mt-2 text-center hidden"></p>
+            </div>
         </div>
 
-        <!-- Log Area (optional for debugging) -->
-        <div class="mt-6 p-4 bg-red-100 border border-red-400 rounded-lg text-red-700 hidden" id="errorLog">
-            <h3 class="font-bold">Обнаружены ошибки:</h3>
-            <pre id="errorDetails" class="mt-2 whitespace-pre-wrap text-sm"></pre>
-        </div>
+        <!-- Debug Log Spoiler (Контейнер лога) -->
+        <details class="mt-8 p-4 bg-gray-100 border border-gray-300 rounded-lg" id="debugLogSpoiler">
+            <summary class="flex justify-between items-center cursor-pointer font-semibold text-gray-700 focus:outline-none">
+                <span>
+                    <!-- Новая иконка: Документ/Список -->
+                    <svg class="w-5 h-5 inline-block mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-9 0V3a1 1 0 011-1h4a1 1 0 011 1v2M9 5h6M9 12h6m-6 4h6" />
+                    </svg>
+                    Лог конвертации / Отладка (Открыть для просмотра деталей процесса)
+                </span>
+                <svg class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </summary>
+            <!-- Контейнер лога: p-2 для минимального, но достаточного отступа -->
+            <div id="logDetails" class="mt-2 text-sm text-gray-700 overflow-auto h-40 bg-white p-2 rounded-lg border border-gray-200 shadow-inner">
+                <!-- Log entries will appear here as structured HTML -->
+            </div>
+        </details>
 
         <!-- Footer Section with Copyright -->
-        <footer class="mt-8 pt-4 border-t border-gray-200 text-center">
+        <footer class="mt-10 pt-6 border-t border-gray-200 text-center">
             <p class="text-xs text-gray-400">
-                Разработано Службой испытаний, экспертизы и метрологии ГАУ ИНПЦ "Гормедтехника" и все права защищены.
+                Разработано Службой испытаний, экспертизы и метрологии ГАУ ИНПЦ "Гормедтехника".
             </p>
         </footer>
     </div>
@@ -132,6 +201,8 @@
         const SNILS_PLACEHOLDER = '11489876506';
         // Количество строк метаданных, которые нужно пропустить до заголовка
         const HEADER_SKIP_LINES = 2; 
+        // Минимальное время отображения анимации обработки (в мс)
+        const MIN_PROCESSING_TIME = 1500; 
 
         const COL_INDEX = {
             'Author': 1,
@@ -148,35 +219,90 @@
         const statusMessage = document.getElementById('statusMessage');
         const downloadButton = document.getElementById('downloadButton');
         const recordCountElement = document.getElementById('recordCount');
-        const errorLog = document.getElementById('errorLog');
-        const errorDetails = document.getElementById('errorDetails');
+        const processingIndicator = document.getElementById('processingIndicator');
+        const debugLogSpoiler = document.getElementById('debugLogSpoiler');
+        const logDetails = document.getElementById('logDetails');
 
         // --- УТИЛИТЫ ---
+        let errorCount = 0;
 
-        function updateStatus(message, isError = false) {
-            statusMessage.textContent = message;
-            statusMessage.className = `font-medium mb-2 ${isError ? 'text-red-600' : 'text-gray-600'}`;
+        function startProcessing() {
+            logDetails.innerHTML = ''; // Очистка лога перед началом
+            errorCount = 0;
+            statusMessage.textContent = 'Начало обработки файла...';
+            statusMessage.classList.remove('text-red-600');
+            statusMessage.classList.add('text-gray-600');
+            processingIndicator.classList.remove('hidden');
             downloadButton.disabled = true;
-            downloadButton.classList.add('opacity-50', 'cursor-not-allowed');
-            downloadButton.classList.remove('bg-green-500', 'hover:bg-green-600');
-            errorLog.classList.add('hidden');
+            downloadButton.classList.add('opacity-50', 'cursor-not-allowed', 'disabled:shadow-none');
+            downloadButton.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
             recordCountElement.classList.add('hidden');
         }
 
+        function stopProcessing() {
+            processingIndicator.classList.add('hidden');
+            if (errorCount > 0) {
+                 debugLogSpoiler.open = true; // Открываем лог, если были ошибки
+            }
+        }
+
+        function updateStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = `font-semibold text-lg mb-4 ${isError ? 'text-red-600' : 'text-gray-600'}`;
+            if (isError) {
+                downloadButton.disabled = true;
+                downloadButton.classList.add('opacity-50', 'cursor-not-allowed', 'disabled:shadow-none');
+                downloadButton.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+            }
+        }
+
         function updateSuccess(count) {
-            statusMessage.textContent = 'Конвертация успешно завершена.';
-            statusMessage.className = 'font-medium mb-2 text-green-600';
+            updateStatus('Конвертация успешно завершена. Файл готов к скачиванию.', false);
             downloadButton.disabled = false;
-            downloadButton.classList.remove('opacity-50', 'cursor-not-allowed');
-            downloadButton.classList.add('bg-green-500', 'hover:bg-green-600');
-            recordCountElement.textContent = `Сконвертировано записей: ${count}`;
+            downloadButton.classList.remove('opacity-50', 'cursor-not-allowed', 'disabled:shadow-none');
+            downloadButton.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+            recordCountElement.textContent = `Сконвертировано записей: ${count}. Ошибок обработки строк: ${errorCount}.`;
             recordCountElement.classList.remove('hidden');
         }
         
+        /**
+         * Обновленная функция для логирования с поддержкой иконок и цветов, в компактном формате.
+         */
+        function logMessage(message, level = 'INFO') {
+            const timestamp = new Date().toLocaleTimeString('ru-RU');
+            
+            let iconSvg = '';
+            let textColor = 'text-gray-700';
+            let levelColor = 'text-emerald-600'; // Используем emerald
+            let levelDisplay = 'ИНФО';
+
+            if (level === 'ERROR') {
+                // Восклицательный знак (Ошибка).
+                iconSvg = '<svg class="w-4 h-4 mr-1 flex-shrink-0 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+                textColor = 'text-red-700';
+                levelColor = 'text-red-600';
+                levelDisplay = 'ОШИБКА';
+            } else {
+                // Галочка (Инфо).
+                iconSvg = '<svg class="w-4 h-4 mr-1 flex-shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+            }
+
+            // Строгая конкатенация в одну строку без пробелов между span
+            const logEntryHtml = `
+                <div class="flex items-start text-xs font-mono py-0 leading-snug">
+                    ${iconSvg}
+                    <span class="${levelColor} font-bold flex-shrink-0">[${timestamp}] [${levelDisplay}]:&nbsp;</span><span class="${textColor} break-words min-w-0 flex-1">${message}</span>
+                </div>
+            `;
+            
+            // Используем innerHTML += для добавления
+            logDetails.innerHTML += logEntryHtml;
+            logDetails.scrollTop = logDetails.scrollHeight; // Прокрутка вниз
+        }
+
         function logError(message) {
-            console.error(message);
-            errorDetails.textContent += message + '\n';
-            errorLog.classList.remove('hidden');
+            logMessage(message, 'ERROR');
+            errorCount++;
         }
         
         function hasEncodingIssues(text) {
@@ -228,7 +354,10 @@
          */
         function formatDateToISO(dateStr) {
             const dt = parseDate(dateStr);
-            if (!dt) return ""; 
+            if (!dt) {
+                // logError вызывается внутри parseDate, нет необходимости вызывать здесь
+                return ""; 
+            }
 
             // Форматируем в YYYY-MM-DD
             const y = dt.getFullYear();
@@ -247,6 +376,7 @@
             if (text === "нет" || text === "no") {
                 return '2';
             }
+            logError(`Не удалось определить пригодность для текста: "${suitabilityText}". Установлено значение по умолчанию: "Да" (1).`);
             return '1'; // По умолчанию '1'
         }
 
@@ -259,8 +389,6 @@
             dtEnd.setFullYear(dtStart.getFullYear() + 2);
 
             // Вычитаем 1 день
-            // Примечание: JavaScript корректно обрабатывает вычитание дня, 
-            // даже если это приводит к переходу на предыдущий год/месяц.
             dtEnd.setDate(dtEnd.getDate() - 1);
 
             // Форматируем в YYYY-MM-DD
@@ -291,18 +419,20 @@
         // --- ОСНОВНАЯ ЛОГИКА КОНВЕРТАЦИИ ---
 
         function convertToXML(csvContent, usedDelimiter) {
+            logMessage('Начало процесса конвертации CSV в XML.');
             const lines = csvContent.split('\n').filter(line => line.trim() !== '');
             
             if (lines.length <= HEADER_SKIP_LINES) {
-                updateStatus("Ошибка: Файл пуст или содержит только метаданные.", true);
+                logError('Файл содержит недостаточно строк для обработки (<= 2).');
                 return null;
             }
 
             // Пропускаем строки метаданных
             const csvTextWithHeader = lines.slice(HEADER_SKIP_LINES);
+            logMessage(`Пропущено ${HEADER_SKIP_LINES} строк метаданных. Общее количество строк для анализа: ${csvTextWithHeader.length}.`);
             
             if (csvTextWithHeader.length === 0) {
-                 updateStatus("Ошибка: Не удалось найти записи для конвертации. Проверьте содержимое файла.", true);
+                 logError('После пропуска метаданных не осталось строк для обработки.');
                  return null;
             }
 
@@ -319,13 +449,14 @@
                 } else {
                     effectiveDelimiter = ',';
                 }
+                logMessage(`Определен разделитель: "${effectiveDelimiter}". (Запятых: ${commaCount}, Точек с запятой: ${semicolonCount})`);
             }
             
             // --- Пропускаем заголовок CSV (первая строка после метаданных) ---
             const dataLines = csvTextWithHeader.slice(1); 
             
             // --- Улучшенный ручной парсинг CSV ---
-            const dataRecords = dataLines.map(line => {
+            const dataRecords = dataLines.map((line, index) => {
                 if (!line.trim()) return [];
                 
                 const fields = [];
@@ -353,31 +484,41 @@
                     fields.pop();
                 }
                 
+                if (fields.length < COL_INDEX.Document + 1) {
+                     logError(`Строка ${index + 1} (после заголовка) пропущена: недостаточно столбцов (${fields.length}, ожидается минимум ${COL_INDEX.Document + 1}).`);
+                }
+
                 return fields;
             }).filter(fields => fields.length > COL_INDEX.Document); // Фильтруем по минимальной длине
 
+            logMessage(`Найдено ${dataRecords.length} валидных записей для конвертации.`);
+
             if (dataRecords.length === 0) {
-                 updateStatus("Ошибка: Не найдено записей для конвертации. Проверьте формат данных.", true);
                  return null;
             }
 
             // Начинаем строить XML
             let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-            // Внимание: пробелы в тегах Message, xmlns:xsi и xsi:noNamespaceSchemaLocation были исправлены для избежания SyntaxError
             xml += '<Message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="schema.xsd">\n';
             xml += '    <VerificationMeasuringInstrumentData>\n';
             
             let recordCount = 0;
-            errorDetails.textContent = '';
             
-            for (const fields of dataRecords) {
+            for (let i = 0; i < dataRecords.length; i++) {
+                const fields = dataRecords[i];
+                // Номер строки для лога (учитывая пропущенные строки метаданных и заголовок)
+                const lineNumber = i + HEADER_SKIP_LINES + 2; 
+
                 if (fields.length < COL_INDEX.Document + 1) continue;
 
                 try {
                     const authorFull = fields[COL_INDEX.Author];
                     const documentNum = fields[COL_INDEX.Document];
                     
-                    if (!documentNum || documentNum.trim() === '') continue;
+                    if (!documentNum || documentNum.trim() === '') {
+                        logError(`Строка ${lineNumber}: Пропущена, так как отсутствует номер документа (колонка ${COL_INDEX.Document}).`);
+                        continue;
+                    }
 
                     const dateVerification = fields[COL_INDEX.Date];
                     const typeInstrument = fields[COL_INDEX.Type];
@@ -385,13 +526,18 @@
 
                     // Разделение ФИО (Простая логика: Фамилия, затем Имя Отчество)
                     const authorParts = authorFull.split(/\s+/).filter(p => p.length > 0);
-                    const lastName = authorParts[0] || "Unknown";
-                    const firstName = authorParts.slice(1).join(' ');
+                    const lastName = authorParts[0] || "Неизвестный";
+                    const firstName = authorParts.slice(1).join(' ') || "Автор";
                     
                     const dateVerificationClean = dateVerification.split(' ')[0];
                     
                     // --- Форматирование даты в YYYY-MM-DD для тега DateVerification ---
                     const formattedDateVerification = formatDateToISO(dateVerificationClean);
+                    
+                    if (formattedDateVerification === "") {
+                         logError(`Строка ${lineNumber} (${documentNum}): Не удалось преобразовать дату "${dateVerificationClean}". Запись пропущена.`);
+                         continue;
+                    }
 
                     const dateEndVerification = calculateDateEndVerification(dateVerificationClean);
                     const resultVerification = mapSuitability(suitabilityText);
@@ -423,19 +569,19 @@
                     recordCount++;
 
                 } catch (e) {
-                    logError(`Ошибка обработки строки: ${fields.join(effectiveDelimiter)}. Сообщение: ${e.message}`);
+                    logError(`Строка ${lineNumber}: Критическая ошибка обработки: ${e.message}.`);
                 }
             }
+            
+            logMessage(`Всего обработано валидных записей: ${recordCount}. Ошибок обработки: ${errorCount}.`);
 
             xml += '    </VerificationMeasuringInstrumentData>\n';
             xml += '    <SaveMethod>2</SaveMethod>\n';
             xml += '</Message>';
 
             if (recordCount > 0) {
-                updateSuccess(recordCount);
                 return xml;
             } else {
-                updateStatus("Ошибка: Не найдено записей для конвертации. Проверьте формат данных.", true);
                 return null;
             }
         }
@@ -450,6 +596,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            logMessage(`XML-файл "${filename}" создан и загружен.`);
         }
         
         function readFileWithEncoding(file, encoding) {
@@ -457,7 +604,6 @@
                 const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target.result);
                 reader.onerror = reject;
-                // 'windows-1251' — стандартный алиас для CP1251
                 reader.readAsText(file, encoding);
             });
         }
@@ -470,47 +616,78 @@
             const file = files[0];
             if (!file.name.toLowerCase().endsWith('.csv')) {
                 updateStatus("Ошибка: Пожалуйста, выберите файл CSV.", true);
+                logError(`Выбран не CSV файл: ${file.name}`);
                 return;
             }
             
-            errorDetails.textContent = '';
-            errorLog.classList.add('hidden');
             fileNameDisplay.textContent = `Выбран файл: ${file.name}`;
-            updateStatus("Чтение и обработка файла...");
+            startProcessing();
+            const startTime = performance.now();
 
             let csvContent = null;
-            let usedEncoding = 'UTF-8';
+            let finalXmlContent = null;
+            let filename = '';
+            let success = false;
+            let errorMessage = '';
 
             try {
-                // Попытка 1: UTF-8
+                // --- Чтение файла с автоопределением кодировки ---
+                logMessage('Попытка чтения файла с кодировкой UTF-8...');
                 let content = await readFileWithEncoding(file, 'UTF-8');
                 
                 if (hasEncodingIssues(content)) {
-                    // Попытка 2: Windows-1251 (для кириллицы в старых форматах)
-                    usedEncoding = 'windows-1251';
+                    logMessage('Обнаружены проблемы с кодировкой. Повторная попытка чтения с кодировкой Windows-1251...');
                     content = await readFileWithEncoding(file, 'windows-1251');
-                    updateStatus(`Файл успешно прочитан с использованием кодировки Windows-1251.`);
+                    logMessage(`Файл успешно прочитан с использованием кодировки Windows-1251.`);
+                } else {
+                    logMessage('Файл успешно прочитан с кодировкой UTF-8.');
                 }
                 
                 csvContent = content;
+                logMessage('Чтение файла завершено. Запуск конвертера.');
 
-                const xmlContent = convertToXML(csvContent, null); // Передаем null, парсер определит разделитель
+                // --- Конвертация ---
+                finalXmlContent = convertToXML(csvContent, null);
 
-                if (xmlContent) {
-                    const filename = generateFileName();
-                    downloadButton.onclick = () => downloadXML(xmlContent, filename);
+                if (finalXmlContent) {
+                    filename = generateFileName();
+                    success = true;
                 } else {
-                    updateStatus("Не удалось создать XML-файл.", true);
+                    errorMessage = "Ошибка: Не найдено валидных записей для конвертации. Проверьте лог отладки.";
+                    logError(errorMessage);
                 }
 
             } catch(e) {
-                 updateStatus(`Критическая ошибка чтения файла: ${e.message}`, true);
+                 errorMessage = `Критическая ошибка чтения или обработки файла: ${e.message}`;
+                 logError(`КРИТИЧЕСКАЯ ОШИБКА: ${e.message}`);
             }
+
+            // --- Управление временем анимации ---
+            const elapsedTime = performance.now() - startTime;
+            const delay = Math.max(0, MIN_PROCESSING_TIME - elapsedTime);
+
+            setTimeout(() => {
+                stopProcessing();
+                
+                if (success) {
+                    const recordCount = finalXmlContent.match(/<VerificationMeasuringInstrument>/g).length;
+                    updateSuccess(recordCount);
+                    downloadButton.onclick = () => downloadXML(finalXmlContent, filename);
+                } else {
+                    updateStatus(errorMessage, true);
+                }
+            }, delay);
         }
 
         // Drop Area Events
         dropArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        // ИСПРАВЛЕНИЕ: Сброс значения fileInput после обработки для повторного срабатывания 'change'
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+            // Это гарантирует, что событие сработает, даже если выбран тот же файл
+            e.target.value = null; 
+        });
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, preventDefaults, false);
