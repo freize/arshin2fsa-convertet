@@ -6,19 +6,8 @@
     <title>Конвертер данных для ФГИС ФСА</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase Imports -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, setLogLevel, writeBatch, getDocs, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Expose Firebase objects globally for use in the main script block
-        window.firebaseImports = {
-            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
-            getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, setLogLevel, writeBatch, getDocs, query
-        };
-    </script>
     <style>
+        /* Custom styles */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f4f8; 
@@ -28,28 +17,67 @@
             background-size: 15px 15px; 
             background-attachment: fixed;
         }
-        .main-card { background-color: #ffffff; }
-        .drag-area { border: 3px dashed #94a3b8; transition: all 0.3s ease; }
-        .drag-area.active { border-color: #0ea5e9; background-color: #f0f9ff; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2); }
-        details[open] summary svg { transform: rotate(180deg); }
         
-        @keyframes progress-stripes { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        /* Главная карточка */
+        .main-card {
+            background-color: #ffffff;
+        }
+
+        .drag-area {
+            border: 3px dashed #94a3b8; /* slate-400 */
+            transition: all 0.3s ease;
+        }
+        .drag-area.active {
+            border-color: #0ea5e9; /* sky-500 */
+            background-color: #f0f9ff; /* sky-50 */
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2); /* ring effect for focus */
+        }
+        
+        details[open] summary svg {
+            transform: rotate(180deg);
+        }
+        
+        /* Анимация полос прогресса */
+        @keyframes progress-stripes {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
         .animate-progress-stripes {
-            width: 200%; animation: progress-stripes 2s linear infinite;
+            width: 200%; 
+            animation: progress-stripes 2s linear infinite;
             background: linear-gradient(
-                135deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%,
-                rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent
+                135deg,
+                rgba(255, 255, 255, 0.15) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.15) 50%,
+                rgba(255, 255, 255, 0.15) 75%,
+                transparent 75%,
+                transparent
             );
             background-size: 1rem 1rem;
             will-change: transform;
         }
+        
+        .snils-input:focus, .mpi-input:focus {
+             outline: none;
+             border-color: #f97316; /* orange-500 */
+             box-shadow: 0 0 0 1px #f97316;
+        }
+        
     </style>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], },
-                    colors: { 'accent-sky': '#0ea5e9', 'accent-emerald': '#10b981', }
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'accent-sky': '#0ea5e9', // sky-500 for primary
+                        'accent-emerald': '#10b981', // emerald-500 for success
+                    }
                 }
             }
         }
@@ -57,7 +85,7 @@
 </head>
 <body class="p-4 md:p-12">
 
-    <!-- Главная карточка -->
+    <!-- Главная карточка - чистая, белая, с акцентной рамкой -->
     <div class="max-w-4xl mx-auto main-card p-6 md:p-10 rounded-xl shadow-xl border-t-4 border-accent-sky">
         <header class="mb-8 border-b border-gray-200 pb-4">
             <h1 class="text-3xl font-bold text-gray-800 mb-1">
@@ -66,16 +94,48 @@
             <p class="text-gray-500 text-base">
                 Преобразование выгрузки "АРШИН" в формат для загрузки в ФГИС ФСА.
             </p>
-            <p id="userIdDisplay" class="text-xs text-gray-400 mt-2">Статус авторизации: Загрузка...</p>
         </header>
 
+        <!-- Instruction Guide Block -->
+        <details class="mb-8 p-4 bg-sky-50 border border-sky-200 rounded-lg">
+            <summary class="flex justify-between items-center cursor-pointer font-semibold text-sky-800 focus:outline-none">
+                <span>
+                    <svg class="w-5 h-5 inline-block mr-2 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Инструкция по подготовке файла (ВАЖНО)
+                </span>
+                <svg class="w-4 h-4 text-sky-600 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </summary>
+            
+            <div class="mt-3 text-sm text-gray-700 space-y-3">
+                <p class="font-bold text-sky-900">1. Проверка структуры файла:</p>
+                <p>Ваш файл должен быть экспортирован из реестра таким образом, чтобы заголовок таблицы начинался с <span class="font-mono bg-sky-100 p-1 rounded">3-й строки</span> (первые две строки – это метаданные, которые конвертер автоматически пропустит).</p>
+                
+                <p class="font-bold text-sky-900">2. Обязательные колонки (Индекс = номер колонки, начиная с 0):</p>
+                <ul class="list-disc list-inside ml-4 space-y-1 bg-white p-3 rounded border">
+                    <li><span class="font-mono">Author</span> (Индекс **1**): ФИО автора записи. **Требуется сопоставление СНИЛС.**</li>
+                    <li><span class="font-mono">Type</span> (Индекс **3**): Наименование типа СИ. (Используется для тега TypeMeasuringInstrument в XML)</li>
+                    <li><span class="font-mono">GRSI</span> (Индекс **4**): Номер записи в ГРСИ. **Требуется сопоставление МПИ.**</li>
+                    <li><span class="font-mono">Date</span> (Индекс **5**): Дата поверки.</li>
+                    <li><span class="font-mono">Suitability</span> (Индекс **9**): Пригодность ("Да" или "Нет").</li>
+                    <li><span class="font-mono">Document</span> (Индекс **10**): Номер документа (протокола) поверки.</li>
+                </ul>
+                
+                <p class="font-bold text-sky-900">3. Сохранение в формат CSV:</p>
+                <p>В Excel выберите "Сохранить как" и выберите тип файла <span class="font-medium">CSV (разделители-запятые)</span> или <span class="font-medium">CSV (разделители-точки с запятой)</span>. Конвертер автоматически определит разделитель.</p>
+                
+                <p class="text-xs italic mt-4 text-sky-700">
+                    <span class="font-semibold">Расчет МПИ:</span> Дата окончания поверки рассчитывается как (Дата Поверки + МПИ в месяцах - 1 день).
+                </p>
+            </div>
+        </details>
+        
         <!-- Input and Status Section -->
         <div class="space-y-6">
             
-            <!-- БЛОК 1: Загрузка файла -->
-            <div id="fileUploadSection">
+            <!-- БЛОК 1: Загрузка файла (Drag-n-Drop) -->
+            <div>
                 <h2 class="text-xl font-semibold text-gray-700 mb-3 border-b pb-1">
-                    Шаг 1: Загрузка исходного CSV
+                    Загрузка исходного CSV
                 </h2>
                 <div id="drop-area" class="drag-area p-8 rounded-lg text-center cursor-pointer transition-all hover:ring-2 hover:ring-offset-2 hover:ring-sky-300">
                     <input type="file" id="fileInput" accept=".csv" class="hidden">
@@ -88,75 +148,64 @@
                     <p id="fileNameDisplay" class="text-xs text-gray-400 mt-1"></p>
                 </div>
             </div>
-
-            <!-- БЛОК 2: SNILS Management (Перемещен) -->
-            <div id="snilsManagement" class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h2 class="text-xl font-semibold text-gray-700 mb-3 border-b pb-1 flex items-center">
-                    <svg class="w-6 h-6 mr-2 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2h2m-4-6a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 01-1.498-3.155L6 14v-2.5a4 4 0 014-4h.001M12 10a4 4 0 00-4-4H8a4 4 0 00-4 4v2.5L3.498 17A7 7 0 0011 20h2a7 7 0 007-7.498l-1.498-3.155z" /></svg>
-                    Шаг 2: Управление СНИЛС (Ваша база сопоставлений)
-                </h2>
-                <!-- Форма ручного добавления -->
-                <form id="addMappingForm" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 p-3 bg-white rounded-lg border">
-                    <input type="text" id="authorNameInput" placeholder="ФИО Автора (как в CSV)" required
-                           class="col-span-1 md:col-span-1 p-2 border border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500">
-                    <input type="text" id="snilsInput" placeholder="СНИЛС (11 цифр)" required pattern="\d{11}" maxlength="11"
-                           class="col-span-1 md:col-span-1 p-2 border border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500">
-                    <button type="submit" class="col-span-1 bg-sky-500 text-white font-semibold py-2 rounded-md hover:bg-sky-600 transition-colors">
-                        Сохранить сопоставление
-                    </button>
-                </form>
-
-                <!-- Кнопки Импорта/Экспорта -->
-                <div class="mt-4 pt-4 border-t border-yellow-200 flex flex-col sm:flex-row gap-3">
-                    <button id="exportMappingsButton" class="flex-1 bg-sky-600 text-white font-semibold py-2 rounded-md hover:bg-sky-700 transition-colors disabled:opacity-50" disabled>
-                        💾 Выгрузить сопоставления (.json)
-                    </button>
-                    <input type="file" id="importMappingsInput" accept=".json" class="hidden">
-                    <button id="importMappingsButton" class="flex-1 bg-gray-300 text-gray-800 font-semibold py-2 rounded-md hover:bg-gray-400 transition-colors">
-                        📥 Загрузить сопоставления (.json)
-                    </button>
-                </div>
-
-                <!-- Список текущих сопоставлений -->
-                <details class="mt-4">
-                    <summary class="font-medium text-gray-600 mb-2 cursor-pointer">
-                        Показать текущие сопоставления
-                        <svg class="w-4 h-4 inline ml-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <ul id="mappingsList" class="divide-y divide-gray-100 bg-white p-3 rounded-lg border border-gray-200 mt-2">
-                        <p class="text-sm text-gray-500 italic">Загрузка данных...</p>
-                    </ul>
-                </details>
-            </div>
-        
-            <!-- БЛОК 3: Предварительный просмотр недостающих СНИЛС -->
-            <div id="missingMappingsContainer" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg">
-                <h2 class="text-xl font-semibold text-red-700 mb-3 border-b pb-2 flex items-center">
-                    <svg class="w-6 h-6 mr-2 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                    Шаг 3: Необходимо добавить СНИЛС для: <span id="missingCount" class="font-bold">0</span>&nbsp;авторов
-                </h2>
-                <p class="text-sm text-red-600 mb-4">
-                    Введите СНИЛС для каждого автора. Данные сохраняются автоматически.
-                </p>
-
-                <div id="missingAuthorsList" class="space-y-3">
-                    <!-- Здесь будут карточки с недостающими ФИО и полями ввода -->
-                </div>
-
-                <button id="forceConvertButton"
-                        class="w-full mt-6 bg-yellow-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-yellow-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Продолжить конвертацию (даже с недостающими СНИЛС)
-                </button>
-            </div>
             
-            <!-- БЛОК 4: Статус и Скачивание -->
+            <!-- БЛОК ПРЕДУПРЕЖДЕНИЯ О НЕДОСТАЮЩИХ АВТОРАХ (СНИЛС) -->
+            <div id="missingAuthorsContainer" class="hidden p-4 bg-red-100 border-l-4 border-red-500 rounded-lg shadow-md">
+                <div class="flex items-start">
+                    <svg class="h-6 w-6 text-red-600 mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div class="ml-3 w-full">
+                        <h3 class="text-lg font-semibold text-red-800">
+                            Обнаружены недостающие СНИЛС!
+                        </h3>
+                        <p class="mt-1 text-sm text-red-700">
+                            Введите СНИЛС для следующих авторов, чтобы не пропускать их записи.
+                        </p>
+                        <!-- ДИНАМИЧЕСКАЯ ФОРМА ДЛЯ БЫСТРОГО ВВОДА СНИЛС -->
+                        <form id="missingSnilsForm" class="mt-2 text-sm bg-red-50 p-3 rounded max-h-56 overflow-y-auto space-y-2">
+                            <!-- Список авторов и полей ввода будет сгенерирован здесь -->
+                        </form>
+                        <button id="saveMissingSnilsButton" class="w-full mt-3 bg-red-600 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
+                            Сохранить все недостающие СНИЛС
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- БЛОК: ПРЕДУПРЕЖДЕНИЕ О НЕДОСТАЮЩИХ МПИ (Ключ - ГРСИ) -->
+            <div id="missingMpiContainer" class="hidden p-4 bg-orange-100 border-l-4 border-orange-500 rounded-lg shadow-md">
+                <div class="flex items-start">
+                    <svg class="h-6 w-6 text-orange-600 mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h.01M17 11h.01M9 15h.01M15 15h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    <div class="ml-3 w-full">
+                        <h3 class="text-lg font-semibold text-orange-800">
+                            Обнаружены недостающие МПИ!
+                        </h3>
+                        <p class="mt-1 text-sm text-orange-700">
+                            Введите Межповерочный Интервал (в месяцах) для следующих Номеров записи ГРСИ.
+                        </p>
+                        <!-- ДИНАМИЧЕСКАЯ ФОРМА ДЛЯ БЫСТРОГО ВВОДА МПИ -->
+                        <form id="missingMpiForm" class="mt-2 text-sm bg-orange-50 p-3 rounded max-h-56 overflow-y-auto space-y-2">
+                            <!-- Список типов СИ и полей ввода будет сгенерирован здесь -->
+                        </form>
+                        <button id="saveMissingMpiButton" class="w-full mt-3 bg-orange-600 text-white font-bold py-2 rounded-lg hover:bg-orange-700 transition-colors duration-200">
+                            Сохранить все недостающие МПИ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- БЛОК 2: Статус и Скачивание -->
             <div class="p-4 bg-gray-50 rounded-lg shadow-inner border border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-700 mb-3 border-b pb-1">
-                    Шаг 4: Статус и результат
+                    Статус и результат
                 </h2>
+                
                 <div id="statusMessage" class="text-gray-600 text-lg font-semibold mb-4">
                     Ожидание загрузки файла...
                 </div>
+                
                 <!-- Processing Animation -->
                 <div id="processingIndicator" class="mt-4 hidden">
                     <div class="h-2.5 bg-sky-200 rounded-full overflow-hidden">
@@ -164,6 +213,7 @@
                     </div>
                     <p class="text-xs text-accent-sky mt-1 font-medium animate-pulse">Обработка данных...</p>
                 </div>
+
                 <!-- Кнопка с accent-emerald -->
                 <button id="downloadButton"
                         class="w-full mt-4 bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-emerald-600 transition-colors duration-200 opacity-50 cursor-not-allowed disabled:shadow-none"
@@ -173,18 +223,80 @@
                 <p id="recordCount" class="text-sm text-gray-500 mt-2 text-center hidden"></p>
             </div>
         </div>
+        
+        <!-- БЛОК 3: Управление сопоставлением Авторов и СНИЛС -->
+        <details class="mt-8 p-4 bg-yellow-50 border border-yellow-300 rounded-lg" open>
+            <summary class="flex justify-between items-center cursor-pointer font-semibold text-yellow-800 focus:outline-none">
+                <span>
+                    <svg class="w-5 h-5 inline-block mr-2 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    Управление сотрудниками и СНИЛС (Обязательно!)
+                </span>
+                <svg class="w-4 h-4 text-yellow-600 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </summary>
+            
+            <div class="mt-4 space-y-4">
+                <form id="snilsMappingForm" class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="authorNameInput" placeholder="ФИО автора (как в CSV)" required
+                           class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 text-sm" autocomplete="off">
+                    <input type="text" id="snilsInput" placeholder="СНИЛС (11 цифр)" pattern="^\d{11}$" required
+                           class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 text-sm" autocomplete="off">
+                    <button type="submit" class="bg-yellow-600 text-white p-2 rounded-lg font-medium hover:bg-yellow-700 transition duration-150 flex-shrink-0">
+                        Добавить/Обновить
+                    </button>
+                </form>
+
+                <div id="mappingListContainer" class="max-h-60 overflow-y-auto border border-gray-300 rounded-lg shadow-inner">
+                    <!-- Mappings will be rendered here -->
+                    <p class="p-4 text-gray-500 text-sm italic" id="emptyMappingMessage">
+                        Нет сохраненных сопоставлений. Используйте форму выше или импортируйте JSON.
+                    </p>
+                </div>
+            </div>
+        </details>
+        
+        <!-- БЛОК 4: Управление сопоставлением ГРСИ и МПИ (Ключ - ГРСИ) -->
+        <details class="mt-4 p-4 bg-green-50 border border-green-300 rounded-lg" open>
+            <summary class="flex justify-between items-center cursor-pointer font-semibold text-green-800 focus:outline-none">
+                <span>
+                    <svg class="w-5 h-5 inline-block mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Управление ГРСИ и МПИ (Ключ: Номер записи ГРСИ)
+                </span>
+                <svg class="w-4 h-4 text-green-600 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </summary>
+            
+            <div class="mt-4 space-y-4">
+                <form id="mpiMappingForm" class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="instrumentTypeInput" placeholder="Номер записи ГРСИ (как в CSV, колонка 4)" required
+                           class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 text-sm" autocomplete="off">
+                    <input type="number" id="mpiMonthsConfigInput" placeholder="МПИ (месяцы, напр. 12, 24)" min="1" required
+                           class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 text-sm" autocomplete="off">
+                    <button type="submit" class="bg-green-600 text-white p-2 rounded-lg font-medium hover:bg-green-700 transition duration-150 flex-shrink-0">
+                        Добавить/Обновить
+                    </button>
+                </form>
+
+                <div id="mpiMappingListContainer" class="max-h-60 overflow-y-auto border border-gray-300 rounded-lg shadow-inner">
+                    <!-- Mappings will be rendered here -->
+                    <p class="p-4 text-gray-500 text-sm italic" id="emptyMpiMessage">
+                        Нет сохраненных интервалов МПИ.
+                    </p>
+                </div>
+            </div>
+        </details>
 
         <!-- Debug Log Spoiler (Контейнер лога) -->
         <details class="mt-8 p-4 bg-gray-100 border border-gray-300 rounded-lg" id="debugLogSpoiler">
             <summary class="flex justify-between items-center cursor-pointer font-semibold text-gray-700 focus:outline-none">
                 <span>
+                    <!-- Новая иконка: Документ/Список -->
                     <svg class="w-5 h-5 inline-block mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-9 0V3a1 1 0 011-1h4a1 1 0 011 1v2M9 5h6m-6 4h6m-6 4h6m-6 4h6" />
                     </svg>
-                    Лог конвертации / Отладка
+                    Лог конвертации / Отладка (Открыть для просмотра деталей процесса)
                 </span>
                 <svg class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
             </summary>
+            <!-- Контейнер лога: p-2 для минимального, но достаточного отступа -->
             <div id="logDetails" class="mt-2 text-sm text-gray-700 overflow-auto h-40 bg-white p-2 rounded-lg border border-gray-200 shadow-inner">
                 <!-- Log entries will appear here as structured HTML -->
             </div>
@@ -198,42 +310,29 @@
         </footer>
     </div>
 
-    <script type="module">
-        // Global variables from Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
+    <script>
         // --- КОНФИГУРАЦИЯ ---
-        const HEADER_SKIP_LINES = 3; 
+        const SNILS_STORAGE_KEY = 'fgis_fsa_author_snils_map'; 
+        const MPI_STORAGE_KEY = 'fgis_fsa_mpi_map_grsi'; // КЛЮЧ ДЛЯ МПИ (привязан к ГРСИ)
+        const HEADER_SKIP_LINES = 2; 
         const MIN_PROCESSING_TIME = 1500; 
 
-        // Индексы столбцов в CSV-файле (начиная с 0)
         const COL_INDEX = {
-            'Author': 1, // Автор записи
-            'Type': 3, // Тип СИ
-            'Date': 5, // Дата поверки
-            'Suitability': 9, // Пригодность
-            'Document': 10 // Номер документа
+            'Author': 1,
+            'Type': 3,      // Тип СИ (Используется для XML-тега TypeMeasuringInstrument)
+            'GRSI': 4,      // НОВЫЙ КЛЮЧ: Номер записи ГРСИ
+            'Date': 5,
+            'Suitability': 9,
+            'Document': 10
         };
 
-        // --- FIREBASE STATE ---
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
-        // Map<NormalizedFullName (key), SNILS (value)>
-        let snilsMap = new Map(); 
-        // Array of full document snapshots for export/import
-        let currentMappingsData = []; 
+        // --- ГЛОБАЛЬНЫЕ ХРАНИЛИЩА ---
+        let errorCount = 0;
+        let authorSnilsMap = {}; // ФИО -> СНИЛС
+        let mpiMonthsMap = {};  // Номер ГРСИ -> МПИ (в месяцах)
 
-        // --- CONVERSION STATE ---
-        let currentFileContent = null;
-        let currentFilename = null;
-        let missingAuthorsFromCurrentFile = new Set(); // Set<FullName>
-        let isAnalysisPending = false; 
 
-        // --- DOM ЭЛЕМЕНТЫ ---
+        // --- ЭЛЕМЕНТЫ DOM ---
         const fileInput = document.getElementById('fileInput');
         const dropArea = document.getElementById('drop-area');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
@@ -243,56 +342,55 @@
         const processingIndicator = document.getElementById('processingIndicator');
         const debugLogSpoiler = document.getElementById('debugLogSpoiler');
         const logDetails = document.getElementById('logDetails');
-        const userIdDisplay = document.getElementById('userIdDisplay');
-        const addMappingForm = document.getElementById('addMappingForm');
+
+        // Элементы для СНИЛС
+        const snilsMappingForm = document.getElementById('snilsMappingForm');
         const authorNameInput = document.getElementById('authorNameInput');
         const snilsInput = document.getElementById('snilsInput');
-        const missingMappingsContainer = document.getElementById('missingMappingsContainer');
-        const missingAuthorsList = document.getElementById('missingAuthorsList');
-        const missingCount = document.getElementById('missingCount');
-        const forceConvertButton = document.getElementById('forceConvertButton');
-        const fileUploadSection = document.getElementById('fileUploadSection');
-        const exportMappingsButton = document.getElementById('exportMappingsButton');
-        const importMappingsButton = document.getElementById('importMappingsButton');
-        const importMappingsInput = document.getElementById('importMappingsInput');
-        
-        // --- УТИЛИТЫ ---
-        let errorCount = 0;
+        const mappingListContainer = document.getElementById('mappingListContainer');
+        const emptyMappingMessage = document.getElementById('emptyMappingMessage');
+        const missingAuthorsContainer = document.getElementById('missingAuthorsContainer');
+        const missingSnilsForm = document.getElementById('missingSnilsForm');
+        const saveMissingSnilsButton = document.getElementById('saveMissingSnilsButton');
 
-        function updateUserIdDisplay(status, id = null) {
-            userIdDisplay.textContent = `Статус авторизации: ${status}. ${id ? 'ID: ' + id.substring(0, 8) + '...' : ''}`;
-        }
+        // Элементы для МПИ
+        const mpiMappingForm = document.getElementById('mpiMappingForm');
+        const instrumentTypeInput = document.getElementById('instrumentTypeInput'); // Используется для ввода ГРСИ
+        const mpiMonthsConfigInput = document.getElementById('mpiMonthsConfigInput');
+        const mpiMappingListContainer = document.getElementById('mpiMappingListContainer');
+        const emptyMpiMessage = document.getElementById('emptyMpiMessage');
+        const missingMpiContainer = document.getElementById('missingMpiContainer');
+        const missingMpiForm = document.getElementById('missingMpiForm');
+        const saveMissingMpiButton = document.getElementById('saveMissingMpiButton');
 
-        function startProcessingUI(message = 'Начало обработки файла...') {
+
+        // --- УТИЛИТЫ И ОБЩИЕ ФУНКЦИИ ---
+
+        function startProcessing() {
             logDetails.innerHTML = ''; 
             errorCount = 0;
-            statusMessage.textContent = message;
-            statusMessage.classList.remove('text-red-600', 'text-yellow-600');
+            statusMessage.textContent = 'Начало обработки файла...';
+            statusMessage.classList.remove('text-red-600');
             statusMessage.classList.add('text-gray-600');
             processingIndicator.classList.remove('hidden');
             downloadButton.disabled = true;
             downloadButton.classList.add('opacity-50', 'cursor-not-allowed', 'disabled:shadow-none');
             downloadButton.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
             recordCountElement.classList.add('hidden');
-            missingMappingsContainer.classList.add('hidden');
-            fileUploadSection.classList.remove('hidden');
-            missingAuthorsFromCurrentFile.clear();
+            missingAuthorsContainer.classList.add('hidden'); 
+            missingMpiContainer.classList.add('hidden'); // Скрываем предупреждение о недостающих МПИ
         }
 
-        function stopProcessingUI() {
+        function stopProcessing() {
             processingIndicator.classList.add('hidden');
             if (errorCount > 0) {
                  debugLogSpoiler.open = true; 
             }
         }
 
-        function updateStatus(message, isError = false, isWarning = false) {
+        function updateStatus(message, isError = false) {
             statusMessage.textContent = message;
-            let color = 'text-gray-600';
-            if (isError) color = 'text-red-600';
-            else if (isWarning) color = 'text-yellow-600';
-
-            statusMessage.className = `font-semibold text-lg mb-4 ${color}`;
+            statusMessage.className = `font-semibold text-lg mb-4 ${isError ? 'text-red-600' : 'text-gray-600'}`;
             if (isError) {
                 downloadButton.disabled = true;
                 downloadButton.classList.add('opacity-50', 'cursor-not-allowed', 'disabled:shadow-none');
@@ -322,12 +420,11 @@
                 textColor = 'text-red-700';
                 levelColor = 'text-red-600';
                 levelDisplay = 'ОШИБКА';
-                errorCount++;
-            } else if (level === 'WARNING') {
-                 iconSvg = '<svg class="w-4 h-4 mr-1 flex-shrink-0 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z" /></svg>';
-                textColor = 'text-yellow-700';
-                levelColor = 'text-yellow-600';
-                levelDisplay = 'ВНИМАНИЕ';
+            } else if (level === 'WARN') {
+                iconSvg = '<svg class="w-4 h-4 mr-1 flex-shrink-0 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+                textColor = 'text-orange-700';
+                levelColor = 'text-orange-600';
+                levelDisplay = 'ПРЕДУПРЕЖДЕНИЕ';
             } else {
                 iconSvg = '<svg class="w-4 h-4 mr-1 flex-shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
             }
@@ -345,617 +442,30 @@
 
         function logError(message) {
             logMessage(message, 'ERROR');
+            errorCount++;
         }
         
-        function getMappingsCollection() {
-            const { collection } = window.firebaseImports;
-            if (!db || !userId) return null;
-            const path = `artifacts/${appId}/users/${userId}/snils_mappings`;
-            return collection(db, path);
-        }
-        
-        // --- FIREBASE LOGIC ---
-        
-        async function initFirebase() {
-            const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.firebaseImports;
-            
-            if (!firebaseConfig.apiKey) {
-                logError('Отсутствует конфигурация Firebase. Постоянное хранение отключено.');
-                isAuthReady = true;
-                updateUserIdDisplay('ОШИБКА КОНФИГУРАЦИИ');
-                return;
-            }
-
-            // setLogLevel('debug');
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            window.firebaseImports.app = app; // Store app for later use if needed
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    isAuthReady = true;
-                    updateUserIdDisplay('Аутентифицирован', userId);
-                    loadMappings();
-                } else {
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (error) {
-                        logError(`Ошибка аутентификации: ${error.message}. Попытка анонимного входа.`);
-                        await signInAnonymously(auth);
-                    }
-                }
-            });
-        }
-        
-        function loadMappings() {
-            const { onSnapshot } = window.firebaseImports;
-
-            const mappingsCol = getMappingsCollection();
-            if (!mappingsCol) {
-                logError('Не удалось загрузить сопоставления: Firestore не готов.');
-                return;
-            }
-            
-            onSnapshot(mappingsCol, (snapshot) => {
-                snilsMap.clear();
-                currentMappingsData = [];
-                let htmlList = '';
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const id = doc.id;
-                    const searchKey = data.fullName.toUpperCase().replace(/\s/g, ''); 
-                    snilsMap.set(searchKey, data.snils);
-                    
-                    // Store the data for export
-                    currentMappingsData.push({ id: id, fullName: data.fullName, snils: data.snils });
-
-                    htmlList += `
-                        <li class="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                            <span class="font-medium text-gray-700 w-1/2 overflow-hidden text-ellipsis whitespace-nowrap">${data.fullName}</span>
-                            <span class="font-mono text-gray-500 text-sm flex-shrink-0">${data.snils}</span>
-                            <button onclick="window.deleteMapping('${id}')" title="Удалить сопоставление" class="ml-4 text-red-500 hover:text-red-700 p-1 rounded-full bg-red-50 hover:bg-red-100 transition-colors">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
-                        </li>
-                    `;
-                });
-
-                document.getElementById('mappingsList').innerHTML = htmlList || '<p class="text-sm text-gray-500 italic">Нет сохраненных СНИЛС-сопоставлений. Добавьте первое.</p>';
-                logMessage(`Загружено ${snilsMap.size} СНИЛС-сопоставлений из Firestore.`);
-                
-                // Enable export button if there are mappings
-                exportMappingsButton.disabled = currentMappingsData.length === 0;
-
-                // If there was a pending analysis, rerun it to see if new mappings cover the missing authors
-                if (isAnalysisPending) {
-                     isAnalysisPending = false; // Reset flag
-                     // Only proceed if file content is present (i.e., we paused after a file drop)
-                     if (currentFileContent) {
-                         // Rerunning the full file analysis will update the missing list UI
-                         identifyMissingAuthorsInFile(currentFileContent, currentFilename); 
-                     }
-                }
-
-            }, (error) => {
-                logError(`Ошибка при подписке на SNILS-сопоставления: ${error.message}`);
-            });
-        }
-        
-        window.deleteMapping = async (docId) => {
-            const { deleteDoc, doc } = window.firebaseImports;
-            if (!db || !userId) {
-                logError('Невозможно удалить: Firestore не инициализирован.');
-                return;
-            }
-            try {
-                const path = `artifacts/${appId}/users/${userId}/snils_mappings`;
-                await deleteDoc(doc(db, path, docId));
-                logMessage(`Сопоставление с ID ${docId} удалено.`);
-            } catch (e) {
-                logError(`Ошибка удаления сопоставления: ${e.message}`);
-            }
-        };
-        
-        addMappingForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fullName = authorNameInput.value.trim();
-            const snils = snilsInput.value.trim();
-            await saveMapping(fullName, snils);
-            authorNameInput.value = '';
-            snilsInput.value = '';
-        });
-
-        /**
-         * Сохраняет одно сопоставление в Firestore.
-         * @param {string} fullName ФИО автора.
-         * @param {string} snils СНИЛС (11 цифр).
-         * @returns {Promise<boolean>} Успех операции.
-         */
-        async function saveMapping(fullName, snils) {
-            const { addDoc } = window.firebaseImports;
-            if (!isAuthReady || !db) {
-                logError('Невозможно добавить сопоставление: Дождитесь инициализации Firestore.');
-                return false;
-            }
-
-            // Simple validation
-            const snilsRegex = /^\d{11}$/;
-            if (!fullName || !snilsRegex.test(snils)) {
-                logError('Некорректные данные: ФИО и СНИЛС (11 цифр) обязательны.');
-                return false;
-            }
-
-            try {
-                const mappingsCol = getMappingsCollection();
-                await addDoc(mappingsCol, {
-                    fullName: fullName,
-                    snils: snils
-                });
-                logMessage(`Добавлено новое сопоставление: ${fullName} -> ${snils}`);
-                return true;
-            } catch (error) {
-                logError(`Ошибка при добавлении сопоставления: ${error.message}`);
-                return false;
-            }
-        }
-        
-        // --- ЛОГИКА ИМПОРТА/ЭКСПОРТА ---
-
-        function handleExportMappings() {
-            if (currentMappingsData.length === 0) {
-                logMessage('Нет данных для экспорта.');
-                return;
-            }
-
-            const exportPayload = {
-                timestamp: new Date().toISOString(),
-                format: "FGIS_SNILS_MAPPINGS_V1", // Используем латиницу для совместимости
-                description: "Exported SNILS mappings for FGIS FSA converter.",
-                mappings: currentMappingsData.map(d => ({ fullName: d.fullName, snils: d.snils }))
-            };
-
-            const dataStr = JSON.stringify(exportPayload, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `fgis_snils_mappings_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            logMessage(`Сопоставления (${currentMappingsData.length} записей) выгружены в JSON-файл.`);
+        function hasEncodingIssues(text) {
+            return text.includes('\uFFFD');
         }
 
-        async function handleImportMappings(file) {
-            const { getDocs, query, writeBatch, doc } = window.firebaseImports;
-            
-            if (!isAuthReady || !db) {
-                logError('Невозможно импортировать: Firestore не инициализирован. Дождитесь статуса "Аутентифицирован".');
-                updateStatus("Невозможно импортировать. Дождитесь загрузки сопоставлений.", true); // Четкая визуальная обратная связь
-                return;
+        function detectDelimiter(headerLine) {
+            const commaCount = (headerLine.match(/,/g) || []).length;
+            const semicolonCount = (headerLine.match(/;/g) || []).length;
+
+            if (semicolonCount > commaCount + 2) {
+                return ';';
             }
-            
-            logMessage(`Чтение файла импорта: ${file.name}...`);
-
-            const reader = new FileReader();
-            
-            // ОБРАБОТЧИК УСПЕШНОГО ЧТЕНИЯ
-            reader.onload = async (e) => {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-
-                    // ИСПРАВЛЕНО: Добавлена проверка на кириллическую версию формата в файле импорта
-                    const allowedFormats = ["FGIS_SNILS_MAPPINGS_V1", "FGIS_СНИЛС_MAPPINGS_V1"];
-                    
-                    if (!allowedFormats.includes(importedData.format) || !Array.isArray(importedData.mappings)) {
-                        throw new Error(`Неверный формат файла сопоставлений. Ожидается один из: ${allowedFormats.join(', ')}.`);
-                    }
-
-                    const newMappings = importedData.mappings;
-                    if (newMappings.length === 0) {
-                        logMessage('Файл импорта не содержит сопоставлений. Операция отменена.');
-                        return;
-                    }
-                    
-                    const mappingsCol = getMappingsCollection();
-                    const batch = writeBatch(db);
-                    let importedCount = 0;
-                    
-                    // Очистка всех существующих сопоставлений перед импортом
-                    const existingDocs = await getDocs(query(mappingsCol));
-                    existingDocs.forEach(d => {
-                        batch.delete(d.ref);
-                    });
-
-                    // Добавление новых сопоставлений
-                    newMappings.forEach(mapping => {
-                        if (mapping.fullName && mapping.snils && /^\d{11}$/.test(mapping.snils)) {
-                            const newDocRef = doc(mappingsCol);
-                            batch.set(newDocRef, { 
-                                fullName: mapping.fullName, 
-                                snils: mapping.snils 
-                            });
-                            importedCount++;
-                        } else {
-                            logError(`Пропущена некорректная запись в импорте: ФИО: ${mapping.fullName || 'N/A'}, СНИЛС: ${mapping.snils || 'N/A'}`);
-                        }
-                    });
-
-                    await batch.commit();
-                    logMessage(`Импорт завершен. Очищено ${existingDocs.size} старых записей и добавлено ${importedCount} новых сопоставлений.`);
-                    updateStatus(`Импорт завершен. Добавлено ${importedCount} сопоставлений.`);
-
-                } catch (error) {
-                    // Явная обработка ошибки парсинга JSON
-                    logError(`Ошибка при парсинге JSON: ${error.message}. Убедитесь, что файл не поврежден.`);
-                    updateStatus(`Ошибка при импорте: Некорректный JSON. Проверьте лог.`, true); 
-                }
-            };
-            
-            // ОБРАБОТЧИК ОШИБКИ ЧТЕНИЯ ФАЙЛА
-            reader.onerror = (e) => {
-                logError(`Ошибка чтения файла: ${e.target.error.name}.`);
-                updateStatus(`Ошибка чтения файла: ${e.target.error.name}`, true);
-            };
-
-            reader.readAsText(file);
+            return ',';
         }
 
-
-        // --- ГЛАВНАЯ ЛОГИКА АНАЛИЗА И КОНВЕРТАЦИИ ---
-        
-        function getParsedDataLines(csvContent, usedDelimiter) {
-             const lines = csvContent.split('\n').filter(line => line.trim() !== '');
-            if (lines.length <= HEADER_SKIP_LINES) return [];
-
-            // Пропускаем строки заголовков
-            const dataLines = lines.slice(HEADER_SKIP_LINES);
-            if (dataLines.length === 0) return [];
-            
-            const firstDataLine = dataLines[0];
-            let effectiveDelimiter = usedDelimiter; 
-
-            if (!effectiveDelimiter) {
-                // Пытаемся угадать разделитель
-                const commaCount = (firstDataLine.match(/,/g) || []).length;
-                const semicolonCount = (firstDataLine.match(/;/g) || []).length;
-
-                // Для АРШИН часто используется ';'
-                if (semicolonCount > commaCount + 2) {
-                    effectiveDelimiter = ';';
-                } else {
-                    effectiveDelimiter = ',';
-                }
-                logMessage(`Определен разделитель: "${effectiveDelimiter}".`);
-            }
-            
-            const dataRecords = dataLines.map((line, index) => {
-                if (!line.trim()) return [];
-                const fields = [];
-                let currentField = '';
-                let inQuotes = false;
-                
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === effectiveDelimiter && !inQuotes) {
-                        fields.push(currentField.trim().replace(/^"|"$/g, ''));
-                        currentField = '';
-                    } else {
-                        currentField += char;
-                    }
-                }
-                fields.push(currentField.trim().replace(/^"|"$/g, ''));
-
-                while (fields.length > 0 && fields[fields.length - 1] === '') {
-                    fields.pop();
-                }
-                return fields;
-            }).filter(fields => fields.length > COL_INDEX.Document); 
-            
-            return dataRecords;
-        }
-
-        /**
-         * Шаг 1: Идентифицирует всех авторов из файла, для которых нет сопоставления СНИЛС.
-         */
-        function identifyMissingAuthors(csvContent) {
-            const allAuthors = new Set();
-            const missingAuthors = new Set();
-            
-            const dataRecords = getParsedDataLines(csvContent, null);
-
-            for (const fields of dataRecords) {
-                if (fields.length > COL_INDEX.Author) {
-                    const authorFull = fields[COL_INDEX.Author].trim();
-                    if (authorFull) {
-                        // FIX: Проверка, что строка данных не является случайно захваченным заголовком.
-                        // Строка заголовков "Автор: Автор записи" будет обработана как [0]: "Автор", [1]: "Автор записи"
-                        if (authorFull.toLowerCase() === 'автор записи') {
-                            logMessage('Обнаружен и пропущен потенциальный заголовок "Автор записи". Проверьте константу HEADER_SKIP_LINES.', 'WARNING');
-                            continue;
-                        }
-
-                        allAuthors.add(authorFull);
-                        const searchKey = authorFull.toUpperCase().replace(/\s/g, '');
-                        if (!snilsMap.has(searchKey)) {
-                            missingAuthors.add(authorFull);
-                        }
-                    }
-                }
-            }
-            return missingAuthors;
-        }
-
-        /**
-         * Шаг 2: Генерирует XML-файл, используя текущие сопоставления.
-         */
-        function generateFinalXML(csvContent) {
-            let recordCount = 0;
-            let currentErrors = 0; 
-            
-            const dataRecords = getParsedDataLines(csvContent, null);
-            if (dataRecords.length === 0) return { status: 'NO_RECORDS' };
-
-            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-            xml += '<Message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="schema.xsd">\n';
-            xml += '    <VerificationMeasuringInstrumentData>\n';
-            
-            for (let i = 0; i < dataRecords.length; i++) {
-                const fields = dataRecords[i];
-                const lineNumber = i + HEADER_SKIP_LINES + 1; // Учитываем, что отсчет строк начинается с 1
-
-                if (fields.length < COL_INDEX.Document + 1) {
-                    logError(`Строка ${lineNumber}: Недостаточно полей. Пропущена.`);
-                    currentErrors++;
-                    continue;
-                }
-
-                try {
-                    const authorFull = fields[COL_INDEX.Author].trim();
-                    const documentNum = fields[COL_INDEX.Document];
-                    const dateVerification = fields[COL_INDEX.Date];
-                    const typeInstrument = fields[COL_INDEX.Type];
-                    const suitabilityText = fields[COL_INDEX.Suitability];
-                    
-                    if (authorFull.toLowerCase() === 'автор записи') {
-                        logMessage(`Строка ${lineNumber}: Пропущена потенциальная строка заголовка, содержащая "Автор записи".`, 'WARNING');
-                        continue;
-                    }
-
-                    if (!documentNum || documentNum.trim() === '') {
-                        logError(`Строка ${lineNumber}: Пропущена, отсутствует номер документа.`);
-                        currentErrors++;
-                        continue;
-                    }
-                    
-                    // --- ЛОГИКА ОПРЕДЕЛЕНИЯ СНИЛС (КРИТИЧНАЯ ПРОВЕРКА) ---
-                    const searchKey = authorFull.toUpperCase().replace(/\s/g, '');
-                    let effectiveSNILS = snilsMap.get(searchKey);
-
-                    if (!effectiveSNILS) {
-                        logError(`Строка ${lineNumber} (${documentNum}): Пропущена. Отсутствует СНИЛС для автора "${authorFull}".`);
-                        currentErrors++;
-                        continue;
-                    }
-
-                    // Разделение ФИО
-                    const authorParts = authorFull.split(/\s+/).filter(p => p.length > 0);
-                    const lastName = authorParts[0] || "Неизвестный";
-                    const firstName = authorParts.slice(1).join(' ') || "Автор";
-                    
-                    const dateVerificationClean = dateVerification.split(' ')[0];
-                    const formattedDateVerification = window.formatDateToISO(dateVerificationClean);
-                    
-                    if (formattedDateVerification === "") {
-                         logError(`Строка ${lineNumber} (${documentNum}): Не удалось преобразовать дату "${dateVerificationClean}". Запись пропущена.`);
-                         currentErrors++;
-                         continue;
-                    }
-
-                    const dateEndVerification = window.calculateDateEndVerification(dateVerificationClean);
-                    const resultVerification = window.mapSuitability(suitabilityText);
-                    
-                    const escape = (str) => str ? str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;') : '';
-
-                    xml += '        <VerificationMeasuringInstrument>\n';
-                    xml += `            <NumberVerification>${escape(documentNum)}</NumberVerification>\n`;
-                    xml += `            <DateVerification>${escape(formattedDateVerification)}</DateVerification>\n`;
-                    
-                    if (resultVerification === '1') {
-                        xml += `            <DateEndVerification>${escape(dateEndVerification)}</DateEndVerification>\n`;
-                    }
-
-                    xml += `            <TypeMeasuringInstrument>${escape(typeInstrument)}</TypeMeasuringInstrument>\n`;
-                    xml += '            <ApprovedEmployees>\n';
-                    xml += '                <Name>\n';
-                    xml += `                    <Last>${escape(lastName)}</Last>\n`;
-                    xml += `                    <First>${escape(firstName)}</First>\n`;
-                    xml += '                </Name>\n';
-                    xml += `                <SNILS>${effectiveSNILS}</SNILS>\n`;
-                    xml += '            </ApprovedEmployees>\n';
-                    xml += `            <ResultVerification>${resultVerification}</ResultVerification>\n`;
-                    xml += '        </VerificationMeasuringInstrument>\n';
-                    
-                    recordCount++;
-
-                } catch (e) {
-                    logError(`Строка ${lineNumber}: Критическая ошибка обработки: ${e.message}. Запись пропущена.`);
-                    currentErrors++;
-                }
-            }
-            
-            errorCount = currentErrors; // Update global counter
-
-            if (recordCount > 0) {
-                xml += '    </VerificationMeasuringInstrumentData>\n';
-                xml += '    <SaveMethod>2</SaveMethod>\n';
-                xml += '</Message>';
-                return { status: 'SUCCESS', xmlContent: xml, recordCount: recordCount };
-            } else {
-                return { status: 'NO_RECORDS' };
-            }
-        }
-        
-        // --- UI LOGIC FOR MISSING MAPPINGS ---
-        
-        function displayMissingAuthors(authorsSet) {
-            missingAuthorsFromCurrentFile = authorsSet;
-            const authorsArray = Array.from(authorsSet).sort();
-            missingCount.textContent = authorsArray.length;
-            missingAuthorsList.innerHTML = '';
-            
-            if (authorsArray.length === 0) {
-                 updateStatus('Анализ завершен. Все СНИЛС найдены. Нажмите "Начать финальную конвертацию" для генерации XML.', false);
-                 forceConvertButton.textContent = 'Начать финальную конвертацию';
-                 forceConvertButton.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
-                 forceConvertButton.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
-                 missingMappingsContainer.classList.remove('hidden');
-                 return;
-            }
-
-            updateStatus('Конвертация приостановлена. Требуется заполнить недостающие СНИЛС.', false, true);
-            fileUploadSection.classList.add('hidden');
-            missingMappingsContainer.classList.remove('hidden');
-
-            authorsArray.forEach(author => {
-                const cleanId = author.replace(/[^a-zA-Z0-9]/g, '_');
-                const card = document.createElement('div');
-                card.className = 'p-4 bg-white rounded-lg shadow-sm border border-red-100';
-                card.innerHTML = `
-                    <p class="font-bold text-gray-800 mb-2 truncate" title="${author}">Автор: ${author}</p>
-                    <form data-author="${author}" class="snils-save-form flex space-x-2">
-                        <input type="text" id="snils-${cleanId}" 
-                               placeholder="Введите 11 цифр СНИЛС" required pattern="\\d{11}" maxlength="11"
-                               class="flex-grow p-2 border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500 text-sm">
-                        <button type="submit" class="flex-shrink-0 bg-red-500 text-white text-sm px-4 py-2 rounded-md hover:bg-red-600 transition-colors">
-                            Сохранить
-                        </button>
-                    </form>
-                `;
-                missingAuthorsList.appendChild(card);
-                
-                // Attach event listener to the form
-                card.querySelector('.snils-save-form').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const targetForm = e.target;
-                    const input = targetForm.querySelector('input');
-                    const button = targetForm.querySelector('button');
-                    
-                    const authorName = targetForm.dataset.author;
-                    const snilsValue = input.value.trim();
-
-                    if (snilsValue.length === 11 && /^\d{11}$/.test(snilsValue)) {
-                        button.disabled = true;
-                        button.textContent = 'Сохранение...';
-                        const success = await saveMapping(authorName, snilsValue);
-                        if (success) {
-                             isAnalysisPending = true; // Reruns analysis after onSnapshot fires
-                        } else {
-                             button.disabled = false;
-                             button.textContent = 'Сохранить';
-                        }
-                    } else {
-                        logError('СНИЛС должен содержать ровно 11 цифр.');
-                    }
-                });
-            });
-
-            forceConvertButton.textContent = 'Продолжить конвертацию (Пропустить недостающие)';
-            forceConvertButton.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-            forceConvertButton.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
-        }
-
-        // --- ГЛАВНЫЙ КОНТРОЛЛЕР ФАЙЛОВ И КОНВЕРТАЦИИ ---
-
-        async function startConversion(content, filename, isFinalRun = false) {
-            if (!isAuthReady) {
-                 updateStatus("Пожалуйста, подождите, пока загрузится хранилище СНИЛС...", false);
-                 return;
-            }
-
-            currentFileContent = content;
-            currentFilename = filename;
-            
-            startProcessingUI(isFinalRun ? 'Финальная генерация XML...' : 'Шаг 1: Анализ файла на недостающие СНИЛС...');
-            const startTime = performance.now();
-
-            if (!isFinalRun) {
-                // --- ШАГ 1: АНАЛИЗ ---
-                const missingAuthors = identifyMissingAuthors(content);
-                missingAuthorsFromCurrentFile = missingAuthors; 
-                logMessage(`Найдено уникальных авторов, требующих СНИЛС: ${missingAuthors.size}`);
-
-                if (missingAuthors.size > 0) {
-                    const elapsedTime = performance.now() - startTime;
-                    const delay = Math.max(0, MIN_PROCESSING_TIME - elapsedTime);
-                    
-                    setTimeout(() => {
-                        stopProcessingUI();
-                        displayMissingAuthors(missingAuthors);
-                    }, delay);
-                    return; // PAUSE
-                } else {
-                    logMessage('Все необходимые СНИЛС найдены. Переход к генерации XML.');
-                    isFinalRun = true; 
-                }
-            }
-
-            // --- ШАГ 2: ФИНАЛЬНАЯ КОНВЕРТАЦИЯ XML ---
-            let finalXmlContent = null;
-            let result = null;
-
-            try {
-                result = generateFinalXML(content);
-
-                if (result.status === 'SUCCESS') {
-                    finalXmlContent = result.xmlContent;
-                } else if (result.status === 'NO_RECORDS') {
-                    throw new Error("Не найдено валидных записей для конвертации.");
-                }
-
-            } catch(e) {
-                 logError(`КРИТИЧЕСКАЯ ОШИБКА: ${e.message}`);
-                 finalXmlContent = null;
-            }
-
-            // Задержка для анимации
-            const elapsedTime = performance.now() - startTime;
-            const delay = Math.max(0, MIN_PROCESSING_TIME - elapsedTime);
-
-            setTimeout(() => {
-                stopProcessingUI();
-                
-                if (finalXmlContent) {
-                    updateSuccess(result.recordCount);
-                    downloadButton.onclick = () => window.downloadXML(finalXmlContent, window.generateFileName());
-                    // Clear state
-                    missingMappingsContainer.classList.add('hidden');
-                    fileUploadSection.classList.remove('hidden');
-                } else {
-                    updateStatus("Конвертация завершена с ошибками или без записей. Проверьте лог.", true);
-                }
-            }, delay);
-        }
-        
-        // --- УТИЛИТАРНЫЕ МЕТОДЫ (ВЫНЕСЕНЫ В WINDOW ДЛЯ ГЛОБАЛЬНОГО ДОСТУПА) ---
-        window.parseDate = function(dateStr) {
+        function parseDate(dateStr) {
             const formats = ["YYYY-MM-DD", "DD.MM.YYYY", "DD-MM-YYYY"];
             const cleanDateStr = dateStr.trim().split(' ')[0];
 
             for (const format of formats) {
                 const parts = cleanDateStr.match(/(\d+)/g); 
+                
                 if (parts && parts.length === 3) {
                     let year, month, day;
 
@@ -964,50 +474,73 @@
                     } else { 
                         [day, month, year] = parts.map(Number);
                     }
-                    if (year < 100) year += 2000;
 
+                    // Используем T00:00:00, чтобы избежать проблем с часовыми поясами
                     const dateObj = new Date(year, month - 1, day);
+
                     if (dateObj.getFullYear() === year && dateObj.getMonth() === month - 1 && dateObj.getDate() === day) {
                         return dateObj;
                     }
                 }
             }
             return null; 
-        };
-        
-        window.formatDateToISO = function(dateStr) {
-            const dt = window.parseDate(dateStr);
+        }
+
+        function formatDateToISO(dateStr) {
+            const dt = parseDate(dateStr);
             if (!dt) return ""; 
+
             const y = dt.getFullYear();
             const m = String(dt.getMonth() + 1).padStart(2, '0');
             const d = String(dt.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        };
-
-        window.mapSuitability = function(suitabilityText) {
-            const text = suitabilityText.trim().toLowerCase();
-            if (text === "да" || text === "yes" || text === "годен") return '1';
-            if (text === "нет" || text === "no" || text === "не годен") return '2';
-            logError(`Не удалось определить пригодность для текста: "${suitabilityText}". Установлено значение по умолчанию: "Да" (1).`);
-            return '1'; 
-        };
-
-        window.calculateDateEndVerification = function(dateVerificationStr) {
-            const dtStart = window.parseDate(dateVerificationStr);
-            if (!dtStart) return ""; 
-
-            const dtEnd = new Date(dtStart.getTime()); 
-            dtEnd.setFullYear(dtStart.getFullYear() + 2);
-            dtEnd.setDate(dtEnd.getDate() - 1); // Один день до двух лет
-
-            const y = dtEnd.getFullYear();
-            const m = String(dtEnd.getMonth() + 1).padStart(2, '0');
-            const d = String(dtEnd.getDate()).padStart(2, '0');
             
             return `${y}-${m}-${d}`;
-        };
+        }
+
+
+        /**
+         * Функция расчета даты окончания поверки
+         * Formula: DateVerification + MPI_Months - 1 day
+         */
+        function calculateDateEndVerification(dateVerificationStr, mpiMonths) {
+            const dtStart = parseDate(dateVerificationStr);
+            
+            if (!dtStart) return ""; 
+
+            const months = parseInt(mpiMonths, 10);
+            if (isNaN(months) || months <= 0) {
+                return "";
+            }
+
+            // Создаем копию даты для расчетов. Добавляем T00:00:00, чтобы сохранить локальную дату.
+            const mpiDate = new Date(dtStart.getFullYear(), dtStart.getMonth(), dtStart.getDate());
+            
+            // 1. Добавляем количество месяцев МПИ
+            mpiDate.setMonth(mpiDate.getMonth() + months);
+
+            // 2. Вычитаем 1 день
+            mpiDate.setDate(mpiDate.getDate() - 1);
+
+            const y = mpiDate.getFullYear();
+            const m = String(mpiDate.getMonth() + 1).padStart(2, '0');
+            const d = String(mpiDate.getDate()).padStart(2, '0');
+            
+            return `${y}-${m}-${d}`;
+        }
         
-        window.generateFileName = function() {
+        function mapSuitability(suitabilityText) {
+            const text = suitabilityText.trim().toLowerCase();
+            if (text === "да" || text === "yes" || text === "пригоден") {
+                return '1';
+            }
+            if (text === "нет" || text === "no" || text === "не пригоден") {
+                return '2';
+            }
+            logMessage(`Не удалось определить пригодность для текста: "${suitabilityText}". Установлено значение по умолчанию: "Да" (1).`, 'WARN');
+            return '1'; 
+        }
+
+        function generateFileName() {
             const now = new Date();
             const y = String(now.getFullYear());
             const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -1016,10 +549,552 @@
             const mm = String(now.getMinutes()).padStart(2, '0');
             const ss = String(now.getSeconds()).padStart(2, '0');
             
-            return `${y}${m}${d}_${hh}${mm}${ss}_output.xml`;
-        };
+            return `${y}${m}${d}_${hh}${mm}${ss}_fgis.xml`;
+        }
         
-        window.downloadXML = function(xmlContent, filename) {
+        function parseCsvLine(line, delimiter) {
+            if (!line.trim()) return [];
+            
+            const fields = [];
+            let currentField = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === delimiter && !inQuotes) {
+                    fields.push(currentField.trim().replace(/^"|"$/g, ''));
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            fields.push(currentField.trim().replace(/^"|"$/g, ''));
+
+            while (fields.length > 0 && fields[fields.length - 1] === '') {
+                fields.pop();
+            }
+            return fields;
+        }
+
+        // --- ЛОГИКА СОПОСТАВЛЕНИЙ ---
+
+        function loadMappings() {
+            try {
+                const storedSnils = localStorage.getItem(SNILS_STORAGE_KEY);
+                if (storedSnils) {
+                    authorSnilsMap = JSON.parse(storedSnils);
+                    logMessage('Сопоставления СНИЛС загружены.');
+                }
+                const storedMpi = localStorage.getItem(MPI_STORAGE_KEY);
+                 if (storedMpi) {
+                    mpiMonthsMap = JSON.parse(storedMpi);
+                    logMessage('Сопоставления МПИ (ГРСИ) загружены.');
+                }
+            } catch(e) {
+                logError(`Ошибка загрузки сопоставлений из localStorage: ${e.message}`);
+                authorSnilsMap = {};
+                mpiMonthsMap = {};
+            }
+            renderMappings();
+            renderMpiMappings();
+        }
+
+        function saveAndRenderMappings() {
+            try {
+                localStorage.setItem(SNILS_STORAGE_KEY, JSON.stringify(authorSnilsMap));
+                logMessage('Сопоставления СНИЛС сохранены.');
+            } catch(e) {
+                logError(`Ошибка сохранения сопоставлений СНИЛС: ${e.message}`);
+            }
+            renderMappings();
+        }
+        
+        function saveAndRenderMpiMappings() {
+            try {
+                localStorage.setItem(MPI_STORAGE_KEY, JSON.stringify(mpiMonthsMap));
+                logMessage('Сопоставления МПИ (ГРСИ) сохранены.');
+            } catch(e) {
+                logError(`Ошибка сохранения сопоставлений МПИ: ${e.message}`);
+            }
+            renderMpiMappings();
+        }
+
+        function renderMappings() {
+            const authors = Object.keys(authorSnilsMap).sort();
+            mappingListContainer.innerHTML = ''; 
+            
+            if (authors.length === 0) {
+                mappingListContainer.appendChild(emptyMappingMessage);
+                emptyMappingMessage.classList.remove('hidden');
+                return;
+            }
+
+            emptyMappingMessage.classList.add('hidden');
+
+            const table = document.createElement('table');
+            table.className = 'min-w-full divide-y divide-gray-200';
+            table.innerHTML = `
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ФИО</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">СНИЛС</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действие</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100" id="mappingTableBody">
+                </tbody>
+            `;
+            mappingListContainer.appendChild(table);
+            const tbody = document.getElementById('mappingTableBody');
+
+            authors.forEach(author => {
+                const snils = authorSnilsMap[author];
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition duration-100';
+                tr.innerHTML = `
+                    <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${author}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${snils}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                        <button data-author="${author}" class="delete-snils-btn text-red-600 hover:text-red-900 transition duration-150">
+                            Удалить
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            tbody.querySelectorAll('.delete-snils-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteMapping);
+            });
+        }
+        
+        function renderMpiMappings() {
+            const grsiNumbers = Object.keys(mpiMonthsMap).sort();
+            mpiMappingListContainer.innerHTML = ''; 
+            
+            if (grsiNumbers.length === 0) {
+                mpiMappingListContainer.appendChild(emptyMpiMessage);
+                emptyMpiMessage.classList.remove('hidden');
+                return;
+            }
+
+            emptyMpiMessage.classList.add('hidden');
+
+            const table = document.createElement('table');
+            table.className = 'min-w-full divide-y divide-gray-200';
+            table.innerHTML = `
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Номер ГРСИ</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">МПИ (мес.)</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действие</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100" id="mpiMappingTableBody">
+                </tbody>
+            `;
+            mpiMappingListContainer.appendChild(table);
+            const tbody = document.getElementById('mpiMappingTableBody');
+
+            grsiNumbers.forEach(grsi => {
+                const mpi = mpiMonthsMap[grsi];
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition duration-100';
+                tr.innerHTML = `
+                    <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${grsi}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${mpi}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                        <button data-type="${grsi}" class="delete-mpi-btn text-red-600 hover:text-red-900 transition duration-150">
+                            Удалить
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            tbody.querySelectorAll('.delete-mpi-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteMpiMapping);
+            });
+        }
+
+        function handleMappingForm(e) {
+            e.preventDefault();
+            const author = authorNameInput.value.trim();
+            const snils = snilsInput.value.trim();
+
+            if (author && snils.match(/^\d{11}$/)) {
+                authorSnilsMap[author] = snils;
+                logMessage(`СНИЛС сопоставление добавлено/обновлено: ${author} -> ${snils}`);
+                saveAndRenderMappings();
+                authorNameInput.value = '';
+                snilsInput.value = '';
+            } else {
+                 logError('Ошибка: Проверьте правильность ФИО автора и СНИЛС (11 цифр).');
+            }
+        }
+        
+        function handleMpiMappingForm(e) {
+            e.preventDefault();
+            const grsiNumber = instrumentTypeInput.value.trim(); // Номер ГРСИ
+            const mpi = mpiMonthsConfigInput.value.trim();
+            const mpiInt = parseInt(mpi, 10);
+
+            if (grsiNumber && !isNaN(mpiInt) && mpiInt > 0) {
+                mpiMonthsMap[grsiNumber] = mpiInt;
+                logMessage(`МПИ сопоставление добавлено/обновлено: ГРСИ №${grsiNumber} -> ${mpiInt} мес.`);
+                saveAndRenderMpiMappings();
+                instrumentTypeInput.value = '';
+                mpiMonthsConfigInput.value = '';
+            } else {
+                 logError('Ошибка: Проверьте правильность Номера ГРСИ и МПИ (должно быть целое число месяцев > 0).');
+            }
+        }
+
+        function handleDeleteMapping(e) {
+            const author = e.target.dataset.author;
+            if (author in authorSnilsMap) {
+                delete authorSnilsMap[author];
+                logMessage(`Сопоставление СНИЛС удалено для автора: ${author}`);
+                saveAndRenderMappings();
+            }
+        }
+        
+        function handleDeleteMpiMapping(e) {
+            const grsi = e.target.dataset.type; // data-type содержит номер ГРСИ
+            if (grsi in mpiMonthsMap) {
+                delete mpiMonthsMap[grsi];
+                logMessage(`Сопоставление МПИ удалено для ГРСИ №: ${grsi}`);
+                saveAndRenderMpiMappings();
+            }
+        }
+        
+        // --- ЛОГИКА ПРОВЕРКИ НЕДОСТАЮЩИХ ДАННЫХ ---
+
+        function getUniqueValuesFromCsv(csvContent, delimiter, colIndex) {
+            const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+            if (lines.length <= HEADER_SKIP_LINES + 1) return new Set();
+
+            const dataLines = lines.slice(HEADER_SKIP_LINES + 1);
+            const uniqueValues = new Set();
+            
+            dataLines.forEach((line) => {
+                const fields = parseCsvLine(line, delimiter);
+                if (fields.length > colIndex) {
+                    const value = fields[colIndex].trim();
+                    if (value) uniqueValues.add(value);
+                }
+            });
+            return uniqueValues;
+        }
+
+        function checkAndDisplayMissingAuthors(uniqueAuthors) {
+            const missingAuthors = [];
+            uniqueAuthors.forEach(author => {
+                if (!(author in authorSnilsMap)) {
+                    missingAuthors.push(author);
+                }
+            });
+
+            if (missingAuthors.length > 0) {
+                missingAuthorsContainer.classList.remove('hidden');
+                logError(`Обнаружено ${missingAuthors.length} уникальных авторов без сопоставления СНИЛС.`);
+                
+                missingSnilsForm.innerHTML = ''; 
+                missingAuthors.forEach(author => {
+                    const div = document.createElement('div');
+                    div.className = 'flex flex-col sm:flex-row items-center gap-2 bg-white p-2 rounded shadow-sm border border-red-200';
+                    div.innerHTML = `
+                        <span class="font-medium text-gray-800 text-sm w-full sm:w-2/5 truncate" title="${author}">${author}</span>
+                        <input type="text" data-author="${author}" placeholder="СНИЛС (11 цифр)" pattern="^\\d{11}$"
+                               class="snils-input flex-1 p-1 border border-gray-300 rounded text-sm w-full" autocomplete="off">
+                    `;
+                    missingSnilsForm.appendChild(div);
+                });
+                saveMissingSnilsButton.onclick = handleMissingSnilsSubmission;
+                return true; // Есть недостающие данные
+            } else {
+                missingAuthorsContainer.classList.add('hidden');
+                logMessage('Все авторы из файла успешно сопоставлены с данными СНИЛС.');
+                return false;
+            }
+        }
+        
+        function checkAndDisplayMissingMpi(csvContent, usedDelimiter) {
+            // Используем COL_INDEX.GRSI для получения уникальных значений
+            const uniqueGrsiNumbers = getUniqueValuesFromCsv(csvContent, usedDelimiter, COL_INDEX.GRSI);
+            
+            const missingGrsi = [];
+            uniqueGrsiNumbers.forEach(grsi => {
+                if (!(grsi in mpiMonthsMap)) {
+                    missingGrsi.push(grsi);
+                }
+            });
+
+            if (missingGrsi.length > 0) {
+                missingMpiContainer.classList.remove('hidden');
+                logError(`Обнаружено ${missingGrsi.length} уникальных номеров ГРСИ без сопоставления МПИ.`);
+                
+                missingMpiForm.innerHTML = ''; 
+                missingGrsi.forEach(grsi => {
+                    const div = document.createElement('div');
+                    div.className = 'flex flex-col sm:flex-row items-center gap-2 bg-white p-2 rounded shadow-sm border border-orange-200';
+                    div.innerHTML = `
+                        <span class="font-medium text-gray-800 text-sm w-full sm:w-2/5 truncate" title="${grsi}">ГРСИ №: ${grsi}</span>
+                        <input type="number" data-type="${grsi}" placeholder="МПИ (месяцы)" min="1"
+                               class="mpi-input flex-1 p-1 border border-gray-300 rounded text-sm w-full" autocomplete="off">
+                    `;
+                    missingMpiForm.appendChild(div);
+                });
+                saveMissingMpiButton.onclick = handleMissingMpiSubmission;
+                return true; // Есть недостающие данные
+            } else {
+                missingMpiContainer.classList.add('hidden');
+                logMessage('Все номера ГРСИ из файла успешно сопоставлены с данными МПИ.');
+                return false;
+            }
+        }
+
+        /**
+         * Обрабатывает форму пакетного ввода недостающих СНИЛС.
+         */
+        function handleMissingSnilsSubmission(e) {
+            e.preventDefault();
+            const inputs = missingSnilsForm.querySelectorAll('.snils-input');
+            let newMappingsCount = 0;
+            let errorFound = false;
+
+            inputs.forEach(input => {
+                const author = input.dataset.author;
+                const snils = input.value.trim();
+
+                input.classList.remove('border-red-500', 'bg-red-50', 'border-emerald-500', 'bg-emerald-50');
+                
+                if (snils.length > 0) {
+                    if (snils.match(/^\d{11}$/)) {
+                        if (!(author in authorSnilsMap) || authorSnilsMap[author] !== snils) {
+                            authorSnilsMap[author] = snils;
+                            newMappingsCount++;
+                        }
+                        input.classList.add('border-emerald-500', 'bg-emerald-50');
+                        input.disabled = true; 
+                    } else {
+                        logError(`Некорректный СНИЛС для "${author}". Ожидается 11 цифр.`);
+                        input.classList.add('border-red-500', 'bg-red-50');
+                        errorFound = true;
+                    }
+                }
+            });
+
+            if (errorFound) {
+                logMessage('Не все СНИЛС сохранены из-за ошибок валидации. Исправьте выделенные поля.', 'ERROR');
+                return;
+            }
+
+            if (newMappingsCount > 0) {
+                saveAndRenderMappings();
+                logMessage(`Успешно добавлено/обновлено ${newMappingsCount} сопоставлений СНИЛС.`);
+                updateStatus('Сопоставления СНИЛС обновлены. Перезагрузите CSV-файл для повторной конвертации.');
+            } else {
+                logMessage('Нет новых данных СНИЛС для сохранения.');
+            }
+            
+            // Если все поля были успешно сохранены, скрыть блок.
+            if (errorFound === false) {
+                 missingAuthorsContainer.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * Обрабатывает форму пакетного ввода недостающих МПИ.
+         */
+        function handleMissingMpiSubmission(e) {
+            e.preventDefault();
+            const inputs = missingMpiForm.querySelectorAll('.mpi-input');
+            let newMappingsCount = 0;
+            let errorFound = false;
+
+            inputs.forEach(input => {
+                const grsiNumber = input.dataset.type; // data-type содержит номер ГРСИ
+                const mpi = parseInt(input.value.trim(), 10);
+
+                input.classList.remove('border-red-500', 'bg-red-50', 'border-emerald-500', 'bg-emerald-50');
+                
+                if (!isNaN(mpi)) {
+                    if (mpi > 0) {
+                        if (mpiMonthsMap[grsiNumber] !== mpi) {
+                            mpiMonthsMap[grsiNumber] = mpi;
+                            newMappingsCount++;
+                        }
+                        input.classList.add('border-emerald-500', 'bg-emerald-50');
+                        input.disabled = true; 
+                    } else {
+                        logError(`Некорректный МПИ для ГРСИ №${grsiNumber}. Ожидается целое число месяцев > 0.`);
+                        input.classList.add('border-red-500', 'bg-red-50');
+                        errorFound = true;
+                    }
+                }
+            });
+
+            if (errorFound) {
+                logMessage('Не все МПИ сохранены из-за ошибок валидации. Исправьте выделенные поля.', 'ERROR');
+                return;
+            }
+
+            if (newMappingsCount > 0) {
+                saveAndRenderMpiMappings();
+                logMessage(`Успешно добавлено/обновлено ${newMappingsCount} сопоставлений МПИ.`);
+                updateStatus('Сопоставления МПИ обновлены. Перезагрузите CSV-файл для повторной конвертации.');
+            } else {
+                logMessage('Нет новых данных МПИ для сохранения.');
+            }
+            
+            // Если все поля были успешно сохранены, скрыть блок.
+            if (errorFound === false) {
+                 missingMpiContainer.classList.add('hidden');
+            }
+        }
+
+        // --- ОСНОВНАЯ ЛОГИКА КОНВЕРТАЦИИ ---
+
+        function convertToXML(csvContent, usedDelimiter) {
+            logMessage('Начало процесса конвертации CSV в XML.');
+            const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+            
+            if (lines.length <= HEADER_SKIP_LINES) {
+                logError('Файл содержит недостаточно строк для обработки (<= 2).');
+                return null;
+            }
+
+            const csvTextWithHeader = lines.slice(HEADER_SKIP_LINES);
+            logMessage(`Пропущено ${HEADER_SKIP_LINES} строк метаданных. Общее количество строк для анализа: ${csvTextWithHeader.length}.`);
+            
+            if (csvTextWithHeader.length === 0) return null;
+
+            const headerLine = csvTextWithHeader[0];
+            const effectiveDelimiter = usedDelimiter || detectDelimiter(headerLine);
+            logMessage(`Определен разделитель: "${effectiveDelimiter}".`);
+            
+            const dataLines = csvTextWithHeader.slice(1); 
+            
+            const dataRecords = dataLines.map((line) => {
+                return parseCsvLine(line, effectiveDelimiter);
+            }).filter(fields => fields.length > 0); 
+            
+            logMessage(`Найдено ${dataRecords.length} потенциальных строк для конвертации.`);
+
+            if (dataRecords.length === 0) return null;
+
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+            xml += '<Message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="schema.xsd">\n';
+            xml += '    <VerificationMeasuringInstrumentData>\n';
+            
+            let recordCount = 0;
+            
+            for (let i = 0; i < dataRecords.length; i++) {
+                const fields = dataRecords[i];
+                const lineNumber = i + HEADER_SKIP_LINES + 2; 
+
+                // Проверка на минимальное количество колонок (документ - 10, ГРСИ - 4)
+                if (fields.length < COL_INDEX.Document + 1 || fields.length < COL_INDEX.GRSI + 1) {
+                     logError(`Строка ${lineNumber}: Пропущена: недостаточно столбцов.`);
+                     continue;
+                }
+
+                try {
+                    const authorFull = fields[COL_INDEX.Author].trim();
+                    const typeInstrument = fields[COL_INDEX.Type].trim();     // Используется для XML-тега TypeMeasuringInstrument
+                    const grsiNumber = fields[COL_INDEX.GRSI].trim();         // Используется как ключ для МПИ
+                    const documentNum = fields[COL_INDEX.Document];
+                    const dateVerification = fields[COL_INDEX.Date];
+                    const suitabilityText = fields[COL_INDEX.Suitability];
+
+                    if (!documentNum || documentNum.trim() === '') {
+                        logError(`Строка ${lineNumber}: Пропущена, отсутствует номер документа (колонка ${COL_INDEX.Document}).`);
+                        continue;
+                    }
+                    
+                    // --- 1. Проверка СНИЛС ---
+                    const snils = authorSnilsMap[authorFull];
+                    if (!snils) {
+                        logError(`Строка ${lineNumber} (${documentNum}): Отсутствует сопоставление СНИЛС для автора: "${authorFull}". (Запись пропущена)`);
+                        continue;
+                    }
+                    
+                    // --- 2. Проверка МПИ (по ключу ГРСИ) ---
+                    const mpiMonths = mpiMonthsMap[grsiNumber];
+                    if (!mpiMonths) {
+                        logError(`Строка ${lineNumber} (${documentNum}): Отсутствует сопоставление МПИ для ГРСИ №: "${grsiNumber}". (Запись пропущена)`);
+                        continue;
+                    }
+
+
+                    // --- Валидация и Форматирование ---
+                    
+                    const dateVerificationClean = dateVerification.split(' ')[0];
+                    const formattedDateVerification = formatDateToISO(dateVerificationClean);
+                    
+                    if (formattedDateVerification === "") {
+                         logError(`Строка ${lineNumber} (${documentNum}): Не удалось преобразовать дату "${dateVerificationClean}". (Запись пропущена)`);
+                         continue;
+                    }
+                    
+                    // Расчет даты окончания поверки с использованием МПИ (в месяцах)
+                    const dateEndVerification = calculateDateEndVerification(dateVerificationClean, mpiMonths);
+                    const resultVerification = mapSuitability(suitabilityText);
+                    
+                    // Разделение ФИО
+                    const authorParts = authorFull.split(/\s+/).filter(p => p.length > 0);
+                    const lastName = authorParts[0] || "Неизвестный";
+                    const firstName = authorParts.slice(1).join(' ') || "Автор";
+                    
+                    // Экранирование XML-специальных символов
+                    const escape = (str) => str ? str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;') : '';
+
+                    xml += '        <VerificationMeasuringInstrument>\n';
+                    xml += `            <NumberVerification>${escape(documentNum)}</NumberVerification>\n`;
+                    xml += `            <DateVerification>${escape(formattedDateVerification)}</DateVerification>\n`;
+                    
+                    if (resultVerification === '1' && dateEndVerification) {
+                        xml += `            <DateEndVerification>${escape(dateEndVerification)}</DateEndVerification>\n`;
+                    } else if (resultVerification === '1' && !dateEndVerification) {
+                        logError(`Строка ${lineNumber} (${documentNum}): Не удалось рассчитать DateEndVerification. Поле пропущено.`);
+                    }
+                    // TypeMeasuringInstrument берется из колонки 3 ('Type')
+                    xml += `            <TypeMeasuringInstrument>${escape(typeInstrument)}</TypeMeasuringInstrument>\n`;
+                    xml += '            <ApprovedEmployees>\n';
+                    xml += '                <Name>\n';
+                    xml += `                    <Last>${escape(lastName)}</Last>\n`;
+                    xml += `                    <First>${escape(firstName)}</First>\n`;
+                    xml += '                </Name>\n';
+                    xml += `                <SNILS>${escape(snils)}</SNILS>\n`;
+                    xml += '            </ApprovedEmployees>\n';
+                    xml += `            <ResultVerification>${resultVerification}</ResultVerification>\n`;
+                    xml += '        </VerificationMeasuringInstrument>\n';
+                    
+                    recordCount++;
+
+                } catch (e) {
+                    logError(`Строка ${lineNumber}: Критическая ошибка обработки: ${e.message}.`);
+                }
+            }
+            
+            logMessage(`Всего обработано валидных записей: ${recordCount}. Ошибок обработки: ${errorCount}.`);
+
+            xml += '    </VerificationMeasuringInstrumentData>\n';
+            xml += '    <SaveMethod>2</SaveMethod>\n';
+            xml += '</Message>';
+
+            if (recordCount > 0) {
+                return xml;
+            } else {
+                return null;
+            }
+        }
+
+        function downloadXML(xmlContent, filename) {
             const blob = new Blob([xmlContent], { type: 'text/xml;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1041,10 +1116,7 @@
             });
         }
 
-        function hasEncodingIssues(text) {
-            // Check for Unicode replacement character
-            return text.includes('\uFFFD');
-        }
+        // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
 
         async function handleFiles(files) {
             if (files.length === 0) return;
@@ -1055,33 +1127,78 @@
                 logError(`Выбран не CSV файл: ${file.name}`);
                 return;
             }
-            
+
             fileNameDisplay.textContent = `Выбран файл: ${file.name}`;
-            
+            startProcessing();
+            const startTime = performance.now();
+
+            let csvContent = null;
+            let finalXmlContent = null;
+            let filename = '';
+            let success = false;
+            let errorMessage = '';
+
             try {
-                logMessage('Попытка чтения файла с кодировкой UTF-8...');
+                // --- 1. Чтение файла ---
+                logMessage('Чтение файла с автоопределением кодировки...');
                 let content = await readFileWithEncoding(file, 'UTF-8');
+                let usedDelimiter = null;
                 
                 if (hasEncodingIssues(content)) {
-                    logMessage('Обнаружены проблемы с кодировкой. Повторная попытка чтения с кодировкой Windows-1251...');
                     content = await readFileWithEncoding(file, 'windows-1251');
                     logMessage(`Файл успешно прочитан с использованием кодировки Windows-1251.`);
                 } else {
                     logMessage('Файл успешно прочитан с кодировкой UTF-8.');
                 }
+                csvContent = content;
+                usedDelimiter = detectDelimiter(csvContent.split('\n')[HEADER_SKIP_LINES]);
                 
-                // Запускаем анализ
-                await startConversion(content, file.name);
+                // --- 2. Сбор уникальных данных ---
+                const uniqueAuthors = getUniqueValuesFromCsv(csvContent, usedDelimiter, COL_INDEX.Author);
+
+                // --- 3. Проверка недостающих данных ---
+                const missingSnils = checkAndDisplayMissingAuthors(uniqueAuthors);
+                const missingMpi = checkAndDisplayMissingMpi(csvContent, usedDelimiter); // Использует COL_INDEX.GRSI внутри
+                
+                if (missingSnils || missingMpi) {
+                    errorMessage = "Требуется ввод недостающих данных (СНИЛС или МПИ). Исправьте выделенные блоки.";
+                    logError(errorMessage);
+                    return; // Прерываем конвертацию
+                }
+                
+                // --- 4. Конвертация ---
+                finalXmlContent = convertToXML(csvContent, usedDelimiter);
+
+                if (finalXmlContent) {
+                    filename = generateFileName();
+                    success = true;
+                } else {
+                    errorMessage = "Ошибка: Не найдено валидных записей для конвертации. Проверьте лог отладки.";
+                    logError(errorMessage);
+                }
 
             } catch(e) {
-                 logError(`Критическая ошибка чтения файла: ${e.message}`);
-                 updateStatus(`Ошибка чтения файла: ${e.message}`, true);
-                 stopProcessingUI();
+                 errorMessage = `Критическая ошибка чтения или обработки файла: ${e.message}`;
+                 logError(`КРИТИЧЕСКАЯ ОШИБКА: ${e.message}`);
             }
+
+            // --- 5. Завершение ---
+            const elapsedTime = performance.now() - startTime;
+            const delay = Math.max(0, MIN_PROCESSING_TIME - elapsedTime);
+
+            setTimeout(() => {
+                stopProcessing();
+                
+                if (success) {
+                    const recordCount = (finalXmlContent.match(/<VerificationMeasuringInstrument>/g) || []).length; 
+                    updateSuccess(recordCount);
+                    downloadButton.onclick = () => downloadXML(finalXmlContent, filename);
+                } else {
+                    updateStatus(errorMessage, true);
+                }
+            }, delay);
         }
 
-        // --- ИНИЦИАЛИЗАЦИЯ И ОБРАБОТЧИКИ DOM ---
-        
         // Drop Area Events
         dropArea.addEventListener('click', () => fileInput.click());
         
@@ -1091,8 +1208,8 @@
         });
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, window.preventDefaults, false);
-            document.body.addEventListener(eventName, window.preventDefaults, false);
+            dropArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
         });
 
         ['dragenter', 'dragover'].forEach(eventName => {
@@ -1109,41 +1226,18 @@
             handleFiles(files);
         }, false);
 
-        window.preventDefaults = function(e) {
+        function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
-        // Обработчик кнопки принудительной конвертации
-        forceConvertButton.addEventListener('click', () => {
-             if (currentFileContent) {
-                 logMessage('Пользователь инициировал финальную конвертацию.');
-                 // Сбрасываем UI и запускаем финальный проход
-                 startConversion(currentFileContent, currentFilename, true); 
-             } else {
-                 logError('Нет загруженного файла для конвертации.');
-             }
-        });
-        
-        // Обработчики кнопок Импорта/Экспорта
-        exportMappingsButton.addEventListener('click', handleExportMappings);
 
-        importMappingsButton.addEventListener('click', () => {
-            importMappingsInput.click();
-        });
+        // --- Прикрепление обработчиков форм ---
+        snilsMappingForm.addEventListener('submit', handleMappingForm);
+        mpiMappingForm.addEventListener('submit', handleMpiMappingForm);
 
-        importMappingsInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleImportMappings(file);
-            }
-            e.target.value = null; // Reset input
-        });
-
-
-        // Запуск Firebase
-        initFirebase();
-        updateStatus("Готов к работе. Дождитесь загрузки сопоставлений СНИЛС.");
+        // Инициализация
+        loadMappings(); // Загрузка сохраненных сопоставлений СНИЛС и МПИ
+        updateStatus("Готов к работе. Поддерживается автоопределение кодировки.");
     </script>
 </body>
 </html>
