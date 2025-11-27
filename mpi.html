@@ -28,56 +28,119 @@
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Конвертер CSV в JSON</title>
     <!-- Подключение Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles: Адаптировано под стиль ФГИС ФСА */
+        /* CSS переменные для светлой темы (по умолчанию) */
+        :root {
+            --bg-primary: #f0f4f8;
+            --bg-pattern: rgba(160, 174, 192, 0.15);
+            --bg-card: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border-color: #d1d5db;
+            --border-light: #e5e7eb;
+            --accent-color: #2563eb;
+            --accent-hover: #1d4ed8;
+            --status-info-bg: #eff6ff;
+            --status-info-text: #1e40af;
+            --status-info-border: #bfdbfe;
+            --status-success-bg: #ecfdf5;
+            --status-success-text: #065f46;
+            --status-success-border: #a7f3d0;
+            --status-error-bg: #fef2f2;
+            --status-error-text: #991b1b;
+            --status-error-border: #fca5a5;
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+            --drag-area-bg: transparent;
+            --drag-area-border: #94a3b8;
+            --drag-area-active-bg: #f0f9ff;
+            --drag-area-active-border: #0ea5e9;
+            --code-bg: #f3f4f6;
+            --details-bg: #f9fafb;
+        }
+
+        /* Темная тема */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0f172a;
+                --bg-pattern: rgba(30, 41, 59, 0.4);
+                --bg-card: #1e293b;
+                --text-primary: #f1f5f9;
+                --text-secondary: #cbd5e1;
+                --text-muted: #94a3b8;
+                --border-color: #374151;
+                --border-light: #374151;
+                --accent-color: #3b82f6;
+                --accent-hover: #2563eb;
+                --status-info-bg: #1e3a8a;
+                --status-info-text: #dbeafe;
+                --status-info-border: #3b82f6;
+                --status-success-bg: #065f46;
+                --status-success-text: #d1fae5;
+                --status-success-border: #10b981;
+                --status-error-bg: #7f1d1d;
+                --status-error-text: #fecaca;
+                --status-error-border: #ef4444;
+                --input-bg: #334155;
+                --input-border: #475569;
+                --drag-area-bg: transparent;
+                --drag-area-border: #475569;
+                --drag-area-active-bg: #0c4a6e;
+                --drag-area-active-border: #0ea5e9;
+                --code-bg: #334155;
+                --details-bg: #1e293b;
+            }
+        }
+
+        /* Применение CSS переменных */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8; /* Очень светлый серо-синий фон */
+            background-color: var(--bg-primary);
             min-height: 100vh;
             /* Сеточный паттерн, как на миллиметровке */
-            background-image: linear-gradient(0deg, transparent 14px, rgba(160, 174, 192, 0.15) 15px),
-                              linear-gradient(90deg, transparent 14px, rgba(160, 174, 192, 0.15) 15px);
+            background-image: linear-gradient(0deg, transparent 14px, var(--bg-pattern) 15px),
+                              linear-gradient(90deg, transparent 14px, var(--bg-pattern) 15px);
             background-size: 15px 15px; 
             background-attachment: fixed;
+            color: var(--text-primary);
         }
         
         /* Главная карточка */
         .main-card {
-            background-color: #ffffff;
+            background-color: var(--bg-card);
             /* Синяя окантовка сверху */
-            border-top: 5px solid #2563eb; /* blue-600 */
+            border-top: 5px solid var(--accent-color);
         }
 
         /* Стиль для сообщения о статусе по умолчанию (info) */
         .status-info {
-            background-color: #eff6ff; /* blue-50 */
-            color: #1e40af; /* blue-800 */
-            border-color: #bfdbfe; /* blue-300 */
+            background-color: var(--status-info-bg);
+            color: var(--status-info-text);
+            border-color: var(--status-info-border);
         }
         .status-success {
-            background-color: #ecfdf5; /* green-50 */
-            color: #065f46; /* green-800 */
-            border-color: #a7f3d0; /* green-300 */
+            background-color: var(--status-success-bg);
+            color: var(--status-success-text);
+            border-color: var(--status-success-border);
         }
         .status-error {
-            background-color: #fef2f2; /* red-50 */
-            color: #991b1b; /* red-800 */
-            border-color: #fca5a5; /* red-300 */
+            background-color: var(--status-error-bg);
+            color: var(--status-error-text);
+            border-color: var(--status-error-border);
         }
 
         /* Добавленные стили для Drag/Drop и Input Focus сохранены */
         .drag-area {
-            border: 3px dashed #94a3b8; /* slate-400 */
+            border: 3px dashed var(--drag-area-border);
             transition: all 0.3s ease;
         }
         .drag-area.active {
-            border-color: #0ea5e9; /* sky-500 */
-            background-color: #f0f9ff; /* sky-50 */
+            border-color: var(--drag-area-active-border);
+            background-color: var(--drag-area-active-bg);
             box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2); /* ring effect for focus */
         }
         
@@ -112,19 +175,49 @@
              border-color: #f97316; /* orange-500 */
              box-shadow: 0 0 0 1px #f97316;
         }
+
+        /* Стили для элементов формы в темной теме */
+        input[type="file"] {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-primary);
+        }
+
+        select, input[type="text"] {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-primary);
+        }
+
+        /* Стили для кода и примеров */
+        code {
+            background-color: var(--code-bg);
+            color: var(--text-primary);
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            color: var(--text-primary);
+        }
+
+        /* Стили для details */
+        details {
+            background-color: var(--details-bg);
+            border-color: var(--border-light);
+        }
         
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <!-- Применяем main-card и улучшенную тень -->
-    <div id="app-container" class="main-card p-8 rounded-xl shadow-2xl w-full max-w-lg transition duration-300">
+    <div id="app-container" class="main-card p-8 rounded-xl shadow-2xl w-full max-w-2xl transition duration-300">
         
         <!-- Контейнер для двух ссылок: flex justify-between обеспечивает расположение слева и справа -->
         <div class="mb-4 -mt-2 flex justify-between items-center"> 
             
             <!-- 1. Навигационная ссылка (слева) -->
-            <a href="/index.html" class="text-sm text-gray-500 hover:text-blue-600 transition duration-150 flex items-center font-medium">
+            <a href="/index.html" class="text-sm text-gray-500 hover:text-blue-600 transition duration-150 flex items-center font-medium dark:text-gray-400 dark:hover:text-blue-400">
                 <!-- Иконка стрелки влево для навигации -->
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Назад на главную
@@ -133,54 +226,109 @@
             <!-- 2. Ссылка для скачивания примера (справа, миниатюрная) -->
             <a href="/ARSHIN example.json" download="ARSHIN example.json" 
                class="text-xs text-gray-500 hover:text-blue-600 transition duration-150 
-                      flex items-center">
+                      flex items-center dark:text-gray-400 dark:hover:text-blue-400">
                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 Скачать пример JSON
             </a>
         </div>
 
-        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 text-center border-b border-gray-200 pb-4">
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 text-center border-b border-gray-200 pb-4 dark:text-gray-100 dark:border-gray-600">
             Конвертер ГРСИ/МПИ (CSV &rarr; JSON)
         </h1>
 
-        <!-- Область загрузки файла -->
+        <!-- Область загрузки файла с улучшенным дизайном -->
         <div class="mb-6">
-            <label for="csvFile" class="block text-lg font-medium text-gray-700 mb-2">
+            <label for="csvFile" class="block text-lg font-medium text-gray-700 mb-2 dark:text-gray-300">
                 Выберите CSV-файл (разделитель: точка с запятой)
             </label>
-            <input type="file" id="csvFile" accept=".csv" class="w-full text-sm text-gray-500
-                file:mr-4 file:py-3 file:px-6
-                file:rounded-xl file:border-0
-                file:text-base file:font-bold
-                file:bg-blue-100 file:text-blue-800
-                hover:file:bg-blue-200 cursor-pointer transition duration-150"
-                onchange="document.getElementById('convertButton').disabled = !this.files.length; document.getElementById('statusMessage').textContent = '';">
+            <div class="relative">
+                <input type="file" id="csvFile" accept=".csv" class="w-full text-sm text-gray-500 dark:text-gray-300
+                    file:mr-4 file:py-3 file:px-6
+                    file:rounded-xl file:border-0
+                    file:text-base file:font-bold
+                    file:bg-blue-100 file:text-blue-800
+                    hover:file:bg-blue-200 cursor-pointer transition duration-150
+                    dark:file:bg-blue-900 dark:file:text-blue-200 dark:hover:file:bg-blue-800">
+                <div id="fileNameDisplay" class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden">
+                    <span class="font-medium">Выбран файл:</span> <span id="fileName"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дополнительные настройки -->
+        <div class="mb-6 bg-gray-50 p-4 rounded-xl dark:bg-gray-800">
+            <h3 class="text-lg font-medium text-gray-700 mb-3 dark:text-gray-300">Настройки конвертации</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" id="skipFirstRow" checked class="rounded text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400">
+                        <span class="text-gray-700 dark:text-gray-300">Пропустить первую строку (заголовок)</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" id="prettyPrint" checked class="rounded text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400">
+                        <span class="text-gray-700 dark:text-gray-300">Форматированный JSON</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <label for="delimiter" class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Разделитель</label>
+                <select id="delimiter" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">
+                    <option value=";" selected>Точка с запятой (;)</option>
+                    <option value=",">Запятая (,)</option>
+                    <option value="\t">Табуляция</option>
+                </select>
+            </div>
         </div>
 
         <!-- Кнопка конвертации -->
         <button id="convertButton" onclick="convertAndDownload()" disabled
-                class="w-full px-4 py-3 bg-blue-600 text-white font-bold text-lg rounded-xl shadow-lg
-                       hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
+                class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-lg rounded-xl shadow-lg
+                       hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed
                        transition duration-200 ease-in-out transform hover:scale-[1.01]
-                       focus:outline-none focus:ring-4 focus:ring-blue-500/50">
-            Конвертировать и Скачать JSON
+                       focus:outline-none focus:ring-4 focus:ring-blue-500/50 flex items-center justify-center
+                       dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-800 dark:hover:to-blue-900">
+            <svg id="convertSpinner" class="hidden w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="convertText">Конвертировать и Скачать JSON</span>
         </button>
 
         <!-- Сообщения о статусе -->
-        <div id="statusMessage" class="mt-6 p-4 rounded-xl text-base transition duration-300 min-h-[50px] border status-info">
+        <div id="statusMessage" class="mt-6 p-4 rounded-xl text-base transition duration-300 min-h-[50px] border status-info hidden">
             <!-- Здесь будут отображаться сообщения о ходе работы или ошибки -->
         </div>
 
-        <!-- Пояснение формата -->
-        <div class="mt-8 border-t pt-4 border-gray-300">
-            <p class="text-xs text-gray-600">
-                <span class="font-semibold text-gray-800">Ожидаемый формат CSV:</span>
-                (Пропускается 1-я строка). Со 2-й строки: <code>ГРСИ;МПИ (месяцы)</code>.
-            </p>
-            <p class="text-xs text-gray-600 mt-1">
-                <span class="font-semibold text-gray-800">Формат JSON:</span>
-                Объект <code>{"54634-13": 12, "XXXXX-XX": N}</code>
-            </p>
+        <!-- Пояснение формата с аккордеоном -->
+        <div class="mt-8 border-t pt-4 border-gray-300 dark:border-gray-600">
+            <details class="group">
+                <summary class="flex justify-between items-center font-medium text-gray-700 cursor-pointer list-none dark:text-gray-300">
+                    <span>Ожидаемый формат данных</span>
+                    <svg class="w-5 h-5 text-gray-500 transition-transform duration-300 group-open:rotate-180 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </summary>
+                <div class="mt-3 text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                    <p><span class="font-semibold text-gray-800 dark:text-gray-200">Ожидаемый формат CSV:</span> 
+                    (Пропускается 1-я строка). Со 2-й строки: <code class="bg-gray-100 px-1 py-0.5 rounded dark:bg-gray-700">ГРСИ;МПИ (месяцы)</code>.</p>
+                    
+                    <div class="bg-gray-50 p-3 rounded-lg mt-2 dark:bg-gray-800">
+                        <p class="font-medium text-gray-700 mb-1 dark:text-gray-300">Пример содержимого CSV:</p>
+                        <pre class="text-xs bg-gray-100 p-2 rounded overflow-x-auto dark:bg-gray-700 dark:text-gray-300">ГРСИ;МПИ
+54634-13;12
+12345-67;24
+67890-12;6</pre>
+                    </div>
+                    
+                    <p class="mt-2"><span class="font-semibold text-gray-800 dark:text-gray-200">Формат JSON:</span> 
+                    Объект <code class="bg-gray-100 px-1 py-0.5 rounded dark:bg-gray-700">{"54634-13": 12, "12345-67": 24, "67890-12": 6}</code></p>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -188,6 +336,27 @@
         // Глобальные константы и переменные
         const FILE_INPUT = document.getElementById('csvFile');
         const STATUS_MESSAGE = document.getElementById('statusMessage');
+        const CONVERT_BUTTON = document.getElementById('convertButton');
+        const CONVERT_TEXT = document.getElementById('convertText');
+        const CONVERT_SPINNER = document.getElementById('convertSpinner');
+        const FILE_NAME_DISPLAY = document.getElementById('fileNameDisplay');
+        const FILE_NAME = document.getElementById('fileName');
+
+        /**
+         * Обрабатывает выбор файла
+         */
+        function handleFileSelection() {
+            const file = FILE_INPUT.files[0];
+            if (file) {
+                CONVERT_BUTTON.disabled = false;
+                FILE_NAME.textContent = file.name;
+                FILE_NAME_DISPLAY.classList.remove('hidden');
+                setStatus('', 'info');
+            } else {
+                CONVERT_BUTTON.disabled = true;
+                FILE_NAME_DISPLAY.classList.add('hidden');
+            }
+        }
 
         /**
          * Устанавливает сообщение о статусе
@@ -195,9 +364,15 @@
          * @param {string} type - Тип: 'info' (по умолчанию), 'success', 'error'
          */
         function setStatus(message, type = 'info') {
+            if (!message) {
+                STATUS_MESSAGE.classList.add('hidden');
+                return;
+            }
+            
             STATUS_MESSAGE.textContent = message;
             // Сброс всех классов статуса и установка базовых
             STATUS_MESSAGE.className = 'mt-6 p-4 rounded-xl text-base transition duration-300 min-h-[50px] border'; 
+            STATUS_MESSAGE.classList.remove('hidden');
 
             switch (type) {
                 case 'success':
@@ -214,6 +389,22 @@
         }
 
         /**
+         * Показывает/скрывает индикатор загрузки на кнопке
+         * @param {boolean} show - Показать индикатор
+         */
+        function toggleLoading(show) {
+            if (show) {
+                CONVERT_SPINNER.classList.remove('hidden');
+                CONVERT_TEXT.textContent = 'Конвертация...';
+                CONVERT_BUTTON.disabled = true;
+            } else {
+                CONVERT_SPINNER.classList.add('hidden');
+                CONVERT_TEXT.textContent = 'Конвертировать и Скачать JSON';
+                CONVERT_BUTTON.disabled = !FILE_INPUT.files.length;
+            }
+        }
+
+        /**
          * Основная функция: читает файл, конвертирует и предлагает скачать
          */
         function convertAndDownload() {
@@ -224,30 +415,39 @@
             }
 
             setStatus('Чтение файла...', 'info');
+            toggleLoading(true);
 
             const reader = new FileReader();
 
             reader.onload = (event) => {
                 try {
                     const csvText = event.target.result;
-                    const jsonObject = parseCSV(csvText);
+                    const skipFirstRow = document.getElementById('skipFirstRow').checked;
+                    const delimiter = document.getElementById('delimiter').value;
+                    const prettyPrint = document.getElementById('prettyPrint').checked;
+                    
+                    const jsonObject = parseCSV(csvText, skipFirstRow, delimiter);
                     
                     if (Object.keys(jsonObject).length === 0) {
                          setStatus('Конвертация завершена, но не найдено ни одной корректной записи для создания JSON. Проверьте формат данных.', 'error');
+                         toggleLoading(false);
                          return;
                     }
 
-                    downloadJSON(jsonObject, file.name);
-                    setStatus(`Успех! JSON файл '${file.name.replace('.csv', '_converted.json')}' создан и готов к скачиванию. Конвертировано ${Object.keys(jsonObject).length} записей.`, 'success');
+                    downloadJSON(jsonObject, file.name, prettyPrint);
+                    setStatus(`Успех! JSON файл создан и готов к скачиванию. Конвертировано ${Object.keys(jsonObject).length} записей.`, 'success');
+                    toggleLoading(false);
 
                 } catch (e) {
                     console.error("Ошибка при обработке файла:", e);
                     setStatus(`Критическая ошибка при обработке: ${e.message}`, 'error');
+                    toggleLoading(false);
                 }
             };
 
             reader.onerror = () => {
                 setStatus('Ошибка при чтении файла.', 'error');
+                toggleLoading(false);
             };
 
             // Читаем файл как текст
@@ -257,29 +457,32 @@
         /**
          * Парсит CSV-текст в JSON-объект
          * @param {string} csvText - Содержимое CSV файла
+         * @param {boolean} skipFirstRow - Пропустить первую строку
+         * @param {string} delimiter - Разделитель
          * @returns {Object} - JSON объект в формате {ГРСИ: МПИ}
          */
-        function parseCSV(csvText) {
+        function parseCSV(csvText, skipFirstRow = true, delimiter = ';') {
             // Разделение на строки и удаление лишних пробелов/пустых строк
             const lines = csvText.split(/\r\n|\n/)
                 .map(line => line.trim())
                 .filter(line => line.length > 0);
 
-            if (lines.length < 2) {
-                throw new Error("Файл должен содержать хотя бы 2 строки (заголовок + одна запись).");
+            if (lines.length < (skipFirstRow ? 2 : 1)) {
+                throw new Error(`Файл должен содержать хотя бы ${skipFirstRow ? '2' : '1'} строк${skipFirstRow ? 'и' : 'у'} (${skipFirstRow ? 'заголовок + одна запись' : 'одна запись'}).`);
             }
 
-            // Пропускаем первую строку (заголовок)
-            const dataLines = lines.slice(1);
+            // Пропускаем первую строку если нужно
+            const dataLines = skipFirstRow ? lines.slice(1) : lines;
             const jsonResult = {};
             let errors = 0;
+            let processed = 0;
 
             dataLines.forEach((line, index) => {
-                // Разделение по точке с запятой
-                const parts = line.split(';');
+                // Разделение по выбранному разделителю
+                const parts = line.split(delimiter);
 
                 if (parts.length !== 2) {
-                    console.warn(`[Строка ${index + 2}] Пропущена: ожидалось 2 столбца, найдено ${parts.length}.`);
+                    console.warn(`[Строка ${index + (skipFirstRow ? 2 : 1)}] Пропущена: ожидалось 2 столбца, найдено ${parts.length}.`);
                     errors++;
                     return;
                 }
@@ -293,23 +496,28 @@
                 const grsiPattern = /^\d+-\d{2}$/;
 
                 if (!grsiPattern.test(grsi)) {
-                    console.warn(`[Строка ${index + 2}] Пропущена: некорректный формат ГРСИ ('${grsi}').`);
+                    console.warn(`[Строка ${index + (skipFirstRow ? 2 : 1)}] Пропущена: некорректный формат ГРСИ ('${grsi}').`);
                     errors++;
                     return;
                 }
                 
                 if (isNaN(mpi) || mpi < 0) { // Также проверяем, что МПИ не отрицательный
-                    console.warn(`[Строка ${index + 2}] Пропущена: МПИ ('${mpiString}') не является корректным положительным числом.`);
+                    console.warn(`[Строка ${index + (skipFirstRow ? 2 : 1)}] Пропущена: МПИ ('${mpiString}') не является корректным положительным числом.`);
                     errors++;
                     return;
                 }
 
                 // Добавление в результирующий объект
                 jsonResult[grsi] = mpi;
+                processed++;
             });
 
             if (errors > 0) {
                  console.warn(`Конвертация завершена с ${errors} ошибками/пропусками.`);
+            }
+            
+            if (processed === 0) {
+                console.warn('Не обработано ни одной строки. Проверьте формат файла и настройки.');
             }
 
             return jsonResult;
@@ -319,9 +527,10 @@
          * Создает и инициирует скачивание JSON файла
          * @param {Object} jsonObject - JSON объект для скачивания
          * @param {string} originalFileName - Исходное имя файла для генерации имени JSON
+         * @param {boolean} prettyPrint - Форматировать JSON
          */
-        function downloadJSON(jsonObject, originalFileName) {
-            const jsonString = JSON.stringify(jsonObject, null, 2); // Форматированный вывод
+        function downloadJSON(jsonObject, originalFileName, prettyPrint = true) {
+            const jsonString = prettyPrint ? JSON.stringify(jsonObject, null, 2) : JSON.stringify(jsonObject);
             const blob = new Blob([jsonString], { type: 'application/json' });
 
             // Заменяем расширение .csv на _converted.json или просто добавляем .json
