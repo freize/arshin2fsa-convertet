@@ -27,7 +27,6 @@
         }
 
         /* Стиль для сообщения о статусе по умолчанию (info) */
-        /* Используем базовые Tailwind классы, но убедимся, что info выглядит строго */
         .status-info {
             background-color: #eff6ff; /* blue-50 */
             color: #1e40af; /* blue-800 */
@@ -44,13 +43,7 @@
             border-color: #fca5a5; /* red-300 */
         }
 
-        /* Улучшение стиля для контейнера приложения, чтобы выделить его на фоне */
-        #app-container {
-            /* Переносим box-shadow в Tailwind, чтобы избежать конфликтов с CSS (если были) */
-        }
-        
-        /* Добавленные стили для Drag/Drop и Input Focus сохранены,
-           хотя они пока не используются, для единообразия */
+        /* Добавленные стили для Drag/Drop и Input Focus сохранены */
         .drag-area {
             border: 3px dashed #94a3b8; /* slate-400 */
             transition: all 0.3s ease;
@@ -99,14 +92,34 @@
 
     <!-- Применяем main-card и улучшенную тень -->
     <div id="app-container" class="main-card p-8 rounded-xl shadow-2xl w-full max-w-lg transition duration-300">
-        <h1 class="text-3xl font-extrabold text-gray-800 mb-8 text-center border-b border-gray-200 pb-4">
+        
+        <!-- Контейнер для двух ссылок: flex justify-between обеспечивает расположение слева и справа -->
+        <div class="mb-4 -mt-2 flex justify-between items-center"> 
+            
+            <!-- 1. Навигационная ссылка (слева) -->
+            <a href="/index.html" class="text-sm text-gray-500 hover:text-blue-600 transition duration-150 flex items-center font-medium">
+                <!-- Иконка стрелки влево для навигации -->
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Назад на главную
+            </a>
+            
+            <!-- 2. Ссылка для скачивания примера (справа, миниатюрная) -->
+            <a href="/ARSHIN example.json" download="ARSHIN example.json" 
+               class="text-xs text-gray-500 hover:text-blue-600 transition duration-150 
+                      flex items-center">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Скачать пример JSON
+            </a>
+        </div>
+
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 text-center border-b border-gray-200 pb-4">
             Конвертер ГРСИ/МПИ (CSV &rarr; JSON)
         </h1>
 
         <!-- Область загрузки файла -->
         <div class="mb-6">
             <label for="csvFile" class="block text-lg font-medium text-gray-700 mb-2">
-                Выберите CSV-файл (разделитель: точка с запятой `;`)
+                Выберите CSV-файл (разделитель: точка с запятой)
             </label>
             <input type="file" id="csvFile" accept=".csv" class="w-full text-sm text-gray-500
                 file:mr-4 file:py-3 file:px-6
@@ -127,7 +140,6 @@
         </button>
 
         <!-- Сообщения о статусе -->
-        <!-- Классы для статуса теперь управляются JS, используя новые стили status-X -->
         <div id="statusMessage" class="mt-6 p-4 rounded-xl text-base transition duration-300 min-h-[50px] border status-info">
             <!-- Здесь будут отображаться сообщения о ходе работы или ошибки -->
         </div>
@@ -199,7 +211,7 @@
                     }
 
                     downloadJSON(jsonObject, file.name);
-                    setStatus(`Успех! JSON файл '${file.name.replace('.csv', '.json')}' создан и готов к скачиванию. Конвертировано ${Object.keys(jsonObject).length} записей.`, 'success');
+                    setStatus(`Успех! JSON файл '${file.name.replace('.csv', '_converted.json')}' создан и готов к скачиванию. Конвертировано ${Object.keys(jsonObject).length} записей.`, 'success');
 
                 } catch (e) {
                     console.error("Ошибка при обработке файла:", e);
@@ -285,6 +297,7 @@
             const jsonString = JSON.stringify(jsonObject, null, 2); // Форматированный вывод
             const blob = new Blob([jsonString], { type: 'application/json' });
 
+            // Заменяем расширение .csv на _converted.json или просто добавляем .json
             const newFileName = originalFileName.replace(/\.csv$/i, '') + '_converted.json';
 
             const url = URL.createObjectURL(blob);
