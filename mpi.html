@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конвертер CSV в JSON</title>
+    <!-- Подключение Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles: Адаптировано под стиль ФГИС ФСА */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Очень светлый серо-синий фон */
+            min-height: 100vh;
+            /* Сеточный паттерн, как на миллиметровке */
+            background-image: linear-gradient(0deg, transparent 14px, rgba(160, 174, 192, 0.15) 15px),
+                              linear-gradient(90deg, transparent 14px, rgba(160, 174, 192, 0.15) 15px);
+            background-size: 15px 15px; 
+            background-attachment: fixed;
+        }
+        
+        /* Главная карточка */
+        .main-card {
+            background-color: #ffffff;
+            /* Синяя окантовка сверху */
+            border-top: 5px solid #2563eb; /* blue-600 */
+        }
+
+        /* Стиль для сообщения о статусе по умолчанию (info) */
+        /* Используем базовые Tailwind классы, но убедимся, что info выглядит строго */
+        .status-info {
+            background-color: #eff6ff; /* blue-50 */
+            color: #1e40af; /* blue-800 */
+            border-color: #bfdbfe; /* blue-300 */
+        }
+        .status-success {
+            background-color: #ecfdf5; /* green-50 */
+            color: #065f46; /* green-800 */
+            border-color: #a7f3d0; /* green-300 */
+        }
+        .status-error {
+            background-color: #fef2f2; /* red-50 */
+            color: #991b1b; /* red-800 */
+            border-color: #fca5a5; /* red-300 */
+        }
+
+        /* Улучшение стиля для контейнера приложения, чтобы выделить его на фоне */
+        #app-container {
+            /* Переносим box-shadow в Tailwind, чтобы избежать конфликтов с CSS (если были) */
+        }
+        
+        /* Добавленные стили для Drag/Drop и Input Focus сохранены,
+           хотя они пока не используются, для единообразия */
+        .drag-area {
+            border: 3px dashed #94a3b8; /* slate-400 */
+            transition: all 0.3s ease;
+        }
+        .drag-area.active {
+            border-color: #0ea5e9; /* sky-500 */
+            background-color: #f0f9ff; /* sky-50 */
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2); /* ring effect for focus */
+        }
+        
+        details[open] summary svg {
+            transform: rotate(180deg);
+        }
+        
+        @keyframes progress-stripes {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .animate-progress-stripes {
+            width: 200%; 
+            animation: progress-stripes 2s linear infinite;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.15) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.15) 50%,
+                rgba(255, 255, 255, 0.15) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 1rem 1rem;
+            will-change: transform;
+        }
+        
+        .snils-input:focus, .mpi-input:focus {
+             outline: none;
+             border-color: #f97316; /* orange-500 */
+             box-shadow: 0 0 0 1px #f97316;
+        }
+        
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Применяем main-card и улучшенную тень -->
+    <div id="app-container" class="main-card p-8 rounded-xl shadow-2xl w-full max-w-lg transition duration-300">
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-8 text-center border-b border-gray-200 pb-4">
+            Конвертер ГРСИ/МПИ (CSV &rarr; JSON)
+        </h1>
+
+        <!-- Область загрузки файла -->
+        <div class="mb-6">
+            <label for="csvFile" class="block text-lg font-medium text-gray-700 mb-2">
+                Выберите CSV-файл (разделитель: точка с запятой `;`)
+            </label>
+            <input type="file" id="csvFile" accept=".csv" class="w-full text-sm text-gray-500
+                file:mr-4 file:py-3 file:px-6
+                file:rounded-xl file:border-0
+                file:text-base file:font-bold
+                file:bg-blue-100 file:text-blue-800
+                hover:file:bg-blue-200 cursor-pointer transition duration-150"
+                onchange="document.getElementById('convertButton').disabled = !this.files.length; document.getElementById('statusMessage').textContent = '';">
+        </div>
+
+        <!-- Кнопка конвертации -->
+        <button id="convertButton" onclick="convertAndDownload()" disabled
+                class="w-full px-4 py-3 bg-blue-600 text-white font-bold text-lg rounded-xl shadow-lg
+                       hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
+                       transition duration-200 ease-in-out transform hover:scale-[1.01]
+                       focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+            Конвертировать и Скачать JSON
+        </button>
+
+        <!-- Сообщения о статусе -->
+        <!-- Классы для статуса теперь управляются JS, используя новые стили status-X -->
+        <div id="statusMessage" class="mt-6 p-4 rounded-xl text-base transition duration-300 min-h-[50px] border status-info">
+            <!-- Здесь будут отображаться сообщения о ходе работы или ошибки -->
+        </div>
+
+        <!-- Пояснение формата -->
+        <div class="mt-8 border-t pt-4 border-gray-300">
+            <p class="text-xs text-gray-600">
+                <span class="font-semibold text-gray-800">Ожидаемый формат CSV:</span>
+                (Пропускается 1-я строка). Со 2-й строки: <code>ГРСИ;МПИ (месяцы)</code>.
+            </p>
+            <p class="text-xs text-gray-600 mt-1">
+                <span class="font-semibold text-gray-800">Формат JSON:</span>
+                Объект <code>{"54634-13": 12, "XXXXX-XX": N}</code>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные константы и переменные
+        const FILE_INPUT = document.getElementById('csvFile');
+        const STATUS_MESSAGE = document.getElementById('statusMessage');
+
+        /**
+         * Устанавливает сообщение о статусе
+         * @param {string} message - Текст сообщения
+         * @param {string} type - Тип: 'info' (по умолчанию), 'success', 'error'
+         */
+        function setStatus(message, type = 'info') {
+            STATUS_MESSAGE.textContent = message;
+            // Сброс всех классов статуса и установка базовых
+            STATUS_MESSAGE.className = 'mt-6 p-4 rounded-xl text-base transition duration-300 min-h-[50px] border'; 
+
+            switch (type) {
+                case 'success':
+                    STATUS_MESSAGE.classList.add('status-success');
+                    break;
+                case 'error':
+                    STATUS_MESSAGE.classList.add('status-error');
+                    break;
+                case 'info':
+                default:
+                    STATUS_MESSAGE.classList.add('status-info');
+                    break;
+            }
+        }
+
+        /**
+         * Основная функция: читает файл, конвертирует и предлагает скачать
+         */
+        function convertAndDownload() {
+            const file = FILE_INPUT.files[0];
+            if (!file) {
+                setStatus('Ошибка: Файл не выбран.', 'error');
+                return;
+            }
+
+            setStatus('Чтение файла...', 'info');
+
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+                try {
+                    const csvText = event.target.result;
+                    const jsonObject = parseCSV(csvText);
+                    
+                    if (Object.keys(jsonObject).length === 0) {
+                         setStatus('Конвертация завершена, но не найдено ни одной корректной записи для создания JSON. Проверьте формат данных.', 'error');
+                         return;
+                    }
+
+                    downloadJSON(jsonObject, file.name);
+                    setStatus(`Успех! JSON файл '${file.name.replace('.csv', '.json')}' создан и готов к скачиванию. Конвертировано ${Object.keys(jsonObject).length} записей.`, 'success');
+
+                } catch (e) {
+                    console.error("Ошибка при обработке файла:", e);
+                    setStatus(`Критическая ошибка при обработке: ${e.message}`, 'error');
+                }
+            };
+
+            reader.onerror = () => {
+                setStatus('Ошибка при чтении файла.', 'error');
+            };
+
+            // Читаем файл как текст
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        /**
+         * Парсит CSV-текст в JSON-объект
+         * @param {string} csvText - Содержимое CSV файла
+         * @returns {Object} - JSON объект в формате {ГРСИ: МПИ}
+         */
+        function parseCSV(csvText) {
+            // Разделение на строки и удаление лишних пробелов/пустых строк
+            const lines = csvText.split(/\r\n|\n/)
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+
+            if (lines.length < 2) {
+                throw new Error("Файл должен содержать хотя бы 2 строки (заголовок + одна запись).");
+            }
+
+            // Пропускаем первую строку (заголовок)
+            const dataLines = lines.slice(1);
+            const jsonResult = {};
+            let errors = 0;
+
+            dataLines.forEach((line, index) => {
+                // Разделение по точке с запятой
+                const parts = line.split(';');
+
+                if (parts.length !== 2) {
+                    console.warn(`[Строка ${index + 2}] Пропущена: ожидалось 2 столбца, найдено ${parts.length}.`);
+                    errors++;
+                    return;
+                }
+
+                const grsi = parts[0].trim();
+                const mpiString = parts[1].trim();
+                const mpi = parseInt(mpiString, 10);
+
+                // Регулярное выражение для проверки формата ГРСИ (например, 54634-13)
+                // Проверяем: 1+ цифр, дефис, 2 цифры
+                const grsiPattern = /^\d+-\d{2}$/;
+
+                if (!grsiPattern.test(grsi)) {
+                    console.warn(`[Строка ${index + 2}] Пропущена: некорректный формат ГРСИ ('${grsi}').`);
+                    errors++;
+                    return;
+                }
+                
+                if (isNaN(mpi) || mpi < 0) { // Также проверяем, что МПИ не отрицательный
+                    console.warn(`[Строка ${index + 2}] Пропущена: МПИ ('${mpiString}') не является корректным положительным числом.`);
+                    errors++;
+                    return;
+                }
+
+                // Добавление в результирующий объект
+                jsonResult[grsi] = mpi;
+            });
+
+            if (errors > 0) {
+                 console.warn(`Конвертация завершена с ${errors} ошибками/пропусками.`);
+            }
+
+            return jsonResult;
+        }
+
+        /**
+         * Создает и инициирует скачивание JSON файла
+         * @param {Object} jsonObject - JSON объект для скачивания
+         * @param {string} originalFileName - Исходное имя файла для генерации имени JSON
+         */
+        function downloadJSON(jsonObject, originalFileName) {
+            const jsonString = JSON.stringify(jsonObject, null, 2); // Форматированный вывод
+            const blob = new Blob([jsonString], { type: 'application/json' });
+
+            const newFileName = originalFileName.replace(/\.csv$/i, '') + '_converted.json';
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = newFileName;
+            
+            // Имитация клика для скачивания
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Освобождение URL
+            URL.revokeObjectURL(url);
+        }
+    </script>
+
+</body>
+</html>
